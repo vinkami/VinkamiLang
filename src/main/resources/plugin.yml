@@ -1,0 +1,5 @@
+name: VinkamiLang
+version: '${project.version}'
+main: com.vinkami.vinkamilang.VinkamiLang
+api-version: 1.18
+description: Vinkami's scripting language for easy scripting!
