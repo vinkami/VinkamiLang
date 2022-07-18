@@ -4,7 +4,9 @@ import org.bukkit.plugin.java.JavaPlugin
 
 class VinkamiLang : JavaPlugin() {
     override fun onEnable() {
-        server.pluginManager.registerEvents(Events(), this)
+        PathFinder(this)
+
+        this.saveDefaultConfig()
         logger.info("Hello World!")
     }
 
