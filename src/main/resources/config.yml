@@ -1,2 +1,6 @@
-default:
-  script: main.vk
+# The only script that will be run upon server starts
+startup script: "main.vk"
+
+# The list of players that will be notified for any warnings and errors in the code
+developers:
+  - "vinkami"
