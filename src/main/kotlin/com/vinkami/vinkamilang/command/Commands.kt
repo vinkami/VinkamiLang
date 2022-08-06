@@ -5,7 +5,7 @@ import com.vinkami.vinkamilang.language.Lexer
 import org.bukkit.entity.Player
 
 @Suppress("UNUSED_PARAMETER")
-class Commands(val pf: PathFinder) {
+class Commands(private val pf: PathFinder) {
     fun execute(sender: Player, cmd: String): Pair<Boolean, String> {
         val things: List<String> = cmd.split(" ")
 
