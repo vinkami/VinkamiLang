@@ -1,8 +1,10 @@
 package com.vinkami.vinkamilang.command
 
 import com.vinkami.vinkamilang.PathFinder
+import com.vinkami.vinkamilang.language.Lexer
 import org.bukkit.entity.Player
 
+@Suppress("UNUSED_PARAMETER")
 class Commands(val pf: PathFinder) {
     fun execute(sender: Player, cmd: String): Pair<Boolean, String> {
         val things: List<String> = cmd.split(" ")
@@ -37,6 +39,11 @@ class Commands(val pf: PathFinder) {
             }
 
             "scripts" -> true to this.pf.scripts.toString()
+
+            "run" -> {
+                val cmd = args.drop(1).joinToString(" ")
+                true to Lexer(cmd).tokenize().toString()
+            }
 
             else -> true to "Unknown usage"
         }
