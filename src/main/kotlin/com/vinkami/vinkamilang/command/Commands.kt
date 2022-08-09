@@ -2,6 +2,9 @@ package com.vinkami.vinkamilang.command
 
 import com.vinkami.vinkamilang.PathFinder
 import com.vinkami.vinkamilang.language.Lexer
+import com.vinkami.vinkamilang.language.LexingException
+import com.vinkami.vinkamilang.language.Parser
+import com.vinkami.vinkamilang.language.ParsingException
 import org.bukkit.entity.Player
 
 @Suppress("UNUSED_PARAMETER")
@@ -40,9 +43,25 @@ class Commands(private val pf: PathFinder) {
 
             "scripts" -> true to this.pf.scripts.toString()
 
-            "run" -> {
+            "runlex" -> {
                 val cmd = args.drop(1).joinToString(" ")
-                true to Lexer(cmd).tokenize().toString()
+                true to try {
+                    Lexer(cmd, "<stdin>").tokenize().toString()
+                } catch (e: LexingException) {
+                    e.toString()
+                }
+            }
+
+            "runparse" -> {
+                val cmd = args.drop(1).joinToString(" ")
+                true to try {
+                    val tokens = Lexer(cmd, "<stdin>").tokenize()
+                    Parser(tokens).parse().toString()
+                } catch (e: LexingException) {
+                    e.toString()
+                } catch (e: ParsingException) {
+                    e.toString()
+                }
             }
 
             else -> true to "Unknown usage"
