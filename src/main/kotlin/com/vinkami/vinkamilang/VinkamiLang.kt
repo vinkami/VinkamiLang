@@ -6,7 +6,7 @@ class VinkamiLang : JavaPlugin() {
     override fun onEnable() {
         PathFinder(this)
 
-        this.saveDefaultConfig()
+        saveDefaultConfig()
         logger.info("Hello World!")
     }
 
