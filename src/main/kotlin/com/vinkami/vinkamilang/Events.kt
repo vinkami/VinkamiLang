@@ -7,7 +7,7 @@ import org.bukkit.event.player.PlayerJoinEvent
 
 class Events(private val pf: PathFinder) : Listener {
     init {
-        this.pf.plugin.server.pluginManager.registerEvents(this, this.pf.plugin)
+        pf.plugin.server.pluginManager.registerEvents(this, pf.plugin)
     }
 
     @EventHandler
@@ -19,7 +19,7 @@ class Events(private val pf: PathFinder) : Listener {
     fun onCommand(event: PlayerCommandPreprocessEvent) {
         val cmd = event.message
         val player = event.player
-        val (worked: Boolean, result: String) = this.pf.cmd.execute(player, cmd)
+        val (worked: Boolean, result: String) = pf.cmd.execute(player, cmd)
         if (worked) {
             event.isCancelled = true
             if (result.isNotBlank()) {

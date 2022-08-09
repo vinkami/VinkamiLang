@@ -14,13 +14,13 @@ class PathFinder(var plugin: JavaPlugin) {
     }
 
     private fun loadScripts() {
-        for (file in this.plugin.dataFolder.resolve("scripts").listFiles()!!) {
+        for (file in plugin.dataFolder.resolve("scripts").listFiles()!!) {
             scripts.add(Script(file, this))
         }
     }
 
     fun reloadScripts() {
-        this.scripts.clear()
-        this.loadScripts()
+        scripts.clear()
+        loadScripts()
     }
 }
