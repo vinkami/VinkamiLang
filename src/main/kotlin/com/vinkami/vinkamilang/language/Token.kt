@@ -1,28 +1,30 @@
 package com.vinkami.vinkamilang.language
 
-class Token(section: String) {
+class Token(section: String, val position: Position) {
     private val pair = determineTokenPair(section)
 
-    val type = this.pair.first
-    val value = this.pair.second
+    val type = pair.first
+    val value = pair.second
 
     override fun toString(): String {
-        return if (this.value == null){"<${this.type}>"} else {"<${this.type}: ${this.value}>"}
+        return if (value == null){"<${type}>"} else {"<${type}: ${value}>"}
     }
 }
 
-fun determineTokenPair(section: String): Pair<TokenType, Any?> {
+fun determineTokenPair(section: String): Pair<TokenType, String?> {
     return when (section) {
         // Key char
         "(" -> Pair(TokenType.L_PARAN, null)
         ")" -> Pair(TokenType.R_PARAN, null)
         "[" -> Pair(TokenType.L_BRAC, null)
         "]" -> Pair(TokenType.R_BRAC, null)
+        "{" -> Pair(TokenType.L_BRACE, null)
+        "}" -> Pair(TokenType.R_BRACE, null)
         "," -> Pair(TokenType.COMMA, null)
         "." -> Pair(TokenType.DOT, null)
         ":" -> Pair(TokenType.COLON, null)
 
-        // Operator
+        // Arithmetic operator
         "+" -> Pair(TokenType.PLUS, null)
         "-" -> Pair(TokenType.MINUS, null)
         "*" -> Pair(TokenType.MULTIPLY, null)
@@ -30,17 +32,28 @@ fun determineTokenPair(section: String): Pair<TokenType, Any?> {
         "^" -> Pair(TokenType.POWER, null)
         "%" -> Pair(TokenType.MODULO, null)
 
-        // Comparator
-        "==" -> Pair(TokenType.EQUAL, null)
-        "!=" -> Pair(TokenType.NOT_EQUAL, null)
+        // Comparative operator
+        "==" -> Pair(TokenType.EQUAL, null)  // Combined from 2 ASSIGN
+        "!=" -> Pair(TokenType.NOT_EQUAL, null)  // Combined from NOT and ASSIGN
         "<" -> Pair(TokenType.LESS, null)
         ">" -> Pair(TokenType.GREATER, null)
-        "<=" -> Pair(TokenType.LESS_EQUAL, null)
-        ">=" -> Pair(TokenType.GREATER_EQUAL, null)
+        "<=" -> Pair(TokenType.LESS_EQUAL, null)  // Combined from LESS and ASSIGN
+        ">=" -> Pair(TokenType.GREATER_EQUAL, null)  // Combined from GREATER and ASSIGN
+
+        // Definitive operator
+        "=" -> Pair(TokenType.ASSIGN, null)
+        "++" -> Pair(TokenType.INCREMENT, null)  // Combined from 2 PLUS
+        "--" -> Pair(TokenType.DECREMENT, null)  // Combined from 2 MINUS
+        "+=" -> Pair(TokenType.PLUS_ASSIGN, null)  // Combined from PLUS and ASSIGN
+        "-=" -> Pair(TokenType.MINUS_ASSIGN, null)  // Combined from MINUS and ASSIGN
+        "*=" -> Pair(TokenType.MULTIPLY_ASSIGN, null)  // Combined from MULTIPLY and ASSIGN
+        "/=" -> Pair(TokenType.DIVIDE_ASSIGN, null)  // Combined from DIVIDE and ASSIGN
+        "%=" -> Pair(TokenType.MODULO_ASSIGN, null)  // Combined from MODULO and ASSIGN
+        "**=" -> Pair(TokenType.POWER_ASSIGN, null)  // Combined from POWER and ASSIGN
 
         // Logic
-        "&&" -> Pair(TokenType.AND, null)
-        "||" -> Pair(TokenType.OR, null)
+        "&" -> Pair(TokenType.AND, null)
+        "|" -> Pair(TokenType.OR, null)
         "!" -> Pair(TokenType.NOT, null)
 
         // Keyword
@@ -57,9 +70,6 @@ fun determineTokenPair(section: String): Pair<TokenType, Any?> {
         "import" -> Pair(TokenType.IMPORT, null)
         "in" -> Pair(TokenType.IN, null)
 
-        // Format
-        " " -> Pair(TokenType.SPACE, null)
-        "\n" -> Pair(TokenType.LINEBREAK, null)
         "EOF" -> Pair(TokenType.EOF, null)
 
         else -> {
@@ -69,6 +79,10 @@ fun determineTokenPair(section: String): Pair<TokenType, Any?> {
                 Pair(TokenType.IDENTIFIER, section)
             } else if (Regex("^\"[^\"]*\"$").matches(section) || Regex("^'[^']*'$").matches(section)) {
                 Pair(TokenType.STRING, section.substring(1, section.length - 1))
+            } else if (Regex("^ $").matches(section)) {
+                Pair(TokenType.SPACE, section)
+            } else if (Regex("^\n$").matches(section)) {
+                Pair(TokenType.LINEBREAK, section)
             } else {
                 Pair(TokenType.UNKNOWN, section)
             }
