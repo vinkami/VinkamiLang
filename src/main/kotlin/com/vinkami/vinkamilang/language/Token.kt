@@ -29,7 +29,7 @@ fun determineTokenPair(section: String): Pair<TokenType, String?> {
         "-" -> Pair(TokenType.MINUS, null)
         "*" -> Pair(TokenType.MULTIPLY, null)
         "/" -> Pair(TokenType.DIVIDE, null)
-        "^" -> Pair(TokenType.POWER, null)
+        "**" -> Pair(TokenType.POWER, null)
         "%" -> Pair(TokenType.MODULO, null)
 
         // Comparative operator
@@ -77,11 +77,11 @@ fun determineTokenPair(section: String): Pair<TokenType, String?> {
                 Pair(TokenType.NUMBER, section)
             } else if (Regex("^[a-zA-Z_][a-zA-Z0-9_]*$").matches(section)) {
                 Pair(TokenType.IDENTIFIER, section)
-            } else if (Regex("^\"[^\"]*\"$").matches(section) || Regex("^'[^']*'$").matches(section)) {
+            } else if (Regex("^\"([^\\\\\"]|\\\\.)*\"\$").matches(section) || Regex("^'([^\\\\']|\\\\.)*'\$").matches(section)) {
                 Pair(TokenType.STRING, section.substring(1, section.length - 1))
-            } else if (Regex("^ $").matches(section)) {
+            } else if (Regex("^ +$").matches(section)) {
                 Pair(TokenType.SPACE, section)
-            } else if (Regex("^\n$").matches(section)) {
+            } else if (Regex("^\n+$").matches(section)) {
                 Pair(TokenType.LINEBREAK, section)
             } else {
                 Pair(TokenType.UNKNOWN, section)
