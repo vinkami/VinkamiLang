@@ -36,6 +36,7 @@ class Lexer(private val text: String, private val fileName: String) {
         }
 
         // EOF token
+        advance()
         val position = Position(fileName, lineNumber, pos, pos)
         tokens += Token("EOF", position)
 
