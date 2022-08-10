@@ -13,39 +13,60 @@ class Commands(private val pf: PathFinder) {
         val things: List<String> = cmd.split(" ")
 
         return when (things[0]) {
-            "/fly" -> this.fly(sender, things.drop(1))
-            "/vk" -> this.vk(sender, things.drop(1))
+            "/fly" -> true to this.fly(sender, things.drop(1))
+            "/vk" -> true to this.vk(sender, things.drop(1))
 
             else -> false to ""  // Not a command from here
         }
     }
 
-    private fun fly(sender: Player, args: List<String>): Pair<Boolean, String> {
-        if (args.isNotEmpty()) {return true to "No arguments for /fly"}
+    private fun fly(sender: Player, args: List<String>): String {
+        if (args.isNotEmpty()) {return "No arguments for /fly"}
 
         return if (sender.allowFlight) {
             sender.allowFlight = false
-            true to "Flying is disabled"
+            "Flying is disabled"
         } else {
             sender.allowFlight = true
-            true to "Flying is enabled"
+            "Flying is enabled"
         }
     }
 
-    private fun vk(sender: Player, args: List<String>): Pair<Boolean, String> {
-        if (args.isEmpty()) {return true to "Usage: /vk [reload|scripts]"}
+    private fun vk(sender: Player, args: List<String>): String {
+        if (args.isEmpty()) {return "Usage: /vk [reload|scripts|print|run]"}
 
         return when (args[0]) {
             "reload" -> {
                 this.pf.reloadScripts()
-                true to "Scripts reloaded"
+                "Scripts reloaded"
             }
 
-            "scripts" -> true to this.pf.scripts.toString()
+            "scripts" -> this.pf.scripts.toString()
+
+            "print" -> {
+                val scriptName = args.drop(1).joinToString(" ")
+                val script = this.pf.scripts.find { it.name == scriptName } ?: return "Script not found"
+                script.code
+            }
+
+            "run" -> {
+                val scriptName = args.drop(1).joinToString(" ")
+                val script = this.pf.scripts.find { it.name == scriptName } ?: return "Script not found"
+
+                try {
+                    val tokens = Lexer(script.code, script.name).tokenize()
+                    Parser(tokens).parse().toString()
+//                    tokens.toString()
+                } catch (e: LexingException) {
+                    e.toString()
+                } catch (e: ParsingException) {
+                    e.toString()
+                }
+            }
 
             "runlex" -> {
                 val cmd = args.drop(1).joinToString(" ")
-                true to try {
+                try {
                     Lexer(cmd, "<stdin>").tokenize().toString()
                 } catch (e: LexingException) {
                     e.toString()
@@ -54,7 +75,7 @@ class Commands(private val pf: PathFinder) {
 
             "runparse" -> {
                 val cmd = args.drop(1).joinToString(" ")
-                true to try {
+                try {
                     val tokens = Lexer(cmd, "<stdin>").tokenize()
                     Parser(tokens).parse().toString()
                 } catch (e: LexingException) {
@@ -64,7 +85,7 @@ class Commands(private val pf: PathFinder) {
                 }
             }
 
-            else -> true to "Unknown usage"
+            else -> "Unknown usage"
         }
     }
 }
