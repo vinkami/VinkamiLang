@@ -17,3 +17,12 @@ class ParsingException(message: String, private val position: Position): Excepti
         """.trimIndent()
     }
 }
+
+class DebugMessage(message: String, private val position: Position): Exception(message) {
+    override fun toString(): String {
+        return """
+            $position
+            DebugMessage: $message
+        """.trimIndent()
+    }
+}
