@@ -1,5 +1,6 @@
 package com.vinkami.vinkamilang.language
 
+import com.vinkami.vinkamilang.language.exception.ParsingException
 import com.vinkami.vinkamilang.language.expression.*
 import com.vinkami.vinkamilang.language.expression.Number
 
@@ -8,8 +9,6 @@ class Parser(private val tokens: List<Token>) {
     private var pos = -1
     private val currentToken: Token
         get() = tokens[pos]
-    private val nextToken: Token
-        get() = tokens[pos + 1]
     private val nextNonSpaceToken: () -> Token
         get() = {
             if (pos >= tokens.size - 1) {

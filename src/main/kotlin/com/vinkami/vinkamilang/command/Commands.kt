@@ -2,9 +2,9 @@ package com.vinkami.vinkamilang.command
 
 import com.vinkami.vinkamilang.PathFinder
 import com.vinkami.vinkamilang.language.Lexer
-import com.vinkami.vinkamilang.language.LexingException
 import com.vinkami.vinkamilang.language.Parser
-import com.vinkami.vinkamilang.language.ParsingException
+import com.vinkami.vinkamilang.language.exception.LexingException
+import com.vinkami.vinkamilang.language.exception.ParsingException
 import org.bukkit.entity.Player
 
 @Suppress("UNUSED_PARAMETER")
