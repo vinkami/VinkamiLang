@@ -15,11 +15,17 @@ enum class TokenType {
     AND, OR, NOT,
 
     // Keyword
-    IF, ELIF, ELSE, TRUE, FALSE, FOR, WHILE, RETURN, VAR, IS, IMPORT, IN,
+    IF, ELIF, ELSE, TRUE, FALSE, FOR, WHILE, RETURN, VAR, IS, IMPORT, IN, COMPLETE, INCOMPLETE, BREAK,
 
     // Literal
     IDENTIFIER, NUMBER, UNKNOWN, STRING,
 
     // Format
     SPACE, LINEBREAK, EOF,
+
+    ;
+
+    override fun toString(): String {
+        return this.name
+    }
 }
