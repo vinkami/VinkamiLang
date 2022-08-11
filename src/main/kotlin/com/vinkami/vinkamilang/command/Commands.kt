@@ -56,7 +56,6 @@ class Commands(private val pf: PathFinder) {
                 try {
                     val tokens = Lexer(script.code, script.name).tokenize()
                     Parser(tokens).parse().toString()
-//                    tokens.toString()
                 } catch (e: LexingException) {
                     e.toString()
                 } catch (e: ParsingException) {
@@ -65,22 +64,13 @@ class Commands(private val pf: PathFinder) {
             }
 
             "runlex" -> {
-                val cmd = args.drop(1).joinToString(" ")
-                try {
-                    Lexer(cmd, "<stdin>").tokenize().toString()
-                } catch (e: LexingException) {
-                    e.toString()
-                }
-            }
+                val scriptName = args.drop(1).joinToString(" ")
+                val script = this.pf.scripts.find { it.name == scriptName } ?: return "Script not found"
 
-            "runparse" -> {
-                val cmd = args.drop(1).joinToString(" ")
                 try {
-                    val tokens = Lexer(cmd, "<stdin>").tokenize()
-                    Parser(tokens).parse().toString()
+                    val tokens = Lexer(script.code, script.name).tokenize()
+                    tokens.toString()
                 } catch (e: LexingException) {
-                    e.toString()
-                } catch (e: ParsingException) {
                     e.toString()
                 }
             }
