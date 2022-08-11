@@ -88,182 +88,28 @@ class Lexer(private val text: String, private val fileName: String) {
         // Working principle: loop all tokens, replace it and the next token if combinable, increment i otherwise
 
         var i = 0
-        var result = tokens
 
         while (i < tokens.size) {
             val currentToken = tokens[i]
-            when (currentToken.type) {
-                TokenType.EOF -> {
-                    result = result.dropLast(tokens.size - i - 1) as MutableList<Token>
-                    break
-                }
-
-                TokenType.LESS -> {
-                    when (result[i+1].type) {
-                        TokenType.ASSIGN -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("<=", pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                TokenType.GREATER -> {
-                    when (result[i+1].type) {
-                        TokenType.ASSIGN -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token(">=", pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                TokenType.ASSIGN -> {
-                    when (result[i+1].type) {
-                        TokenType.ASSIGN -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("==", pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                TokenType.PLUS -> {
-                    when (result[i+1].type) {
-                        TokenType.PLUS -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("++", pos)
-                            result.removeAt(i+1)
-                        }
-                        TokenType.ASSIGN -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("+=", pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                TokenType.MINUS -> {
-                    when (result[i+1].type) {
-                        TokenType.MINUS -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("--", pos)
-                            result.removeAt(i+1)
-                        }
-                        TokenType.ASSIGN -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("-=", pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                TokenType.MULTIPLY -> {
-                    when (result[i+1].type) {
-                        TokenType.ASSIGN -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("*=", pos)
-                            result.removeAt(i+1)
-                        }
-                        TokenType.MULTIPLY -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("**", pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                TokenType.DIVIDE -> {
-                    when (result[i+1].type) {
-                        TokenType.ASSIGN -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("/=", pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                TokenType.POWER -> {
-                    when (result[i+1].type) {
-                        TokenType.ASSIGN -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("**=", pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                TokenType.MODULO -> {
-                    when (result[i+1].type) {
-                        TokenType.ASSIGN -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("%=", pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                TokenType.NOT -> {
-                    when (result[i+1].type) {
-                        TokenType.EQUAL -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token("!=", pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                TokenType.SPACE -> {
-                    when (result[i+1].type) {
-                        TokenType.SPACE -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token(currentToken.value + result[i+1].value, pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                TokenType.LINEBREAK -> {
-                    when (result[i+1].type) {
-                        TokenType.LINEBREAK -> {
-                            val ctpos = currentToken.position
-                            val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                            result[i] = Token(currentToken.value + result[i+1].value, pos)
-                            result.removeAt(i+1)
-                        }
-                        else -> {i++}
-                    }
-                }
-
-                else -> {i++}
+            if (currentToken.type == TokenType.EOF) {
+                return tokens.dropLast(tokens.size - i - 1) as MutableList<Token>
             }
+            val nextToken = tokens[i + 1]
+
+            if (Constant.conbinableTokens.contains(currentToken.type to nextToken.type)) {
+                val procedure = Constant.conbinableTokens[currentToken.type to nextToken.type]!!
+
+                val newTT = procedure.first
+                val newValue = procedure.second(currentToken, nextToken)
+
+                val ctpos = currentToken.position
+                val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
+                tokens[i] = Token(newTT, newValue, pos)
+                tokens.removeAt(i + 1)
+            } else { i++ }  // Some tokens can combine multiple times, so don't increment if a combination happens
+
         }
 
-        return result
+        return tokens
     }
 }

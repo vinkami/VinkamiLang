@@ -41,4 +41,26 @@ object Constant {
         TokenType.LESS to Pair(2, 3), TokenType.LESS_EQUAL to Pair(2, 3),
         TokenType.GREATER to Pair(2, 3), TokenType.GREATER_EQUAL to Pair(2, 3),
     )
+
+    val conbinableTokens: Map<Pair<TokenType, TokenType>, Pair<TokenType, (Token, Token) -> String?>> = mapOf(
+        Pair(TokenType.PLUS, TokenType.PLUS) to Pair(TokenType.INCREMENT) { _, _ -> null },
+        Pair(TokenType.PLUS, TokenType.ASSIGN) to Pair(TokenType.PLUS_ASSIGN) { _, _ -> null },
+
+        Pair(TokenType.MINUS, TokenType.MINUS) to Pair(TokenType.DECREMENT) { _, _ -> null },
+        Pair(TokenType.MINUS, TokenType.ASSIGN) to Pair(TokenType.MINUS_ASSIGN) { _, _ -> null },
+
+        Pair(TokenType.MULTIPLY, TokenType.MULTIPLY) to Pair(TokenType.POWER) { _, _ -> null },
+        Pair(TokenType.MULTIPLY, TokenType.ASSIGN) to Pair(TokenType.MULTIPLY_ASSIGN) { _, _ -> null },
+
+        Pair(TokenType.POWER, TokenType.ASSIGN) to Pair(TokenType.POWER_ASSIGN) { _, _ -> null },
+
+        Pair(TokenType.MODULO, TokenType.ASSIGN) to Pair(TokenType.MODULO_ASSIGN) { _, _ -> null },
+
+        Pair(TokenType.LESS, TokenType.ASSIGN) to Pair(TokenType.LESS_EQUAL) { _, _ -> null },
+        Pair(TokenType.GREATER, TokenType.ASSIGN) to Pair(TokenType.GREATER_EQUAL) { _, _ -> null },
+        Pair(TokenType.NOT, TokenType.ASSIGN) to Pair(TokenType.NOT_EQUAL) { _, _-> null },
+
+        Pair(TokenType.SPACE, TokenType.SPACE) to Pair(TokenType.SPACE) { t1, t2 -> t1.value + t2.value },
+        Pair(TokenType.LINEBREAK, TokenType.LINEBREAK) to Pair(TokenType.LINEBREAK) { t1, t2 -> t1.value + t2.value },
+    )
 }
