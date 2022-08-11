@@ -1,9 +1,10 @@
 package com.vinkami.vinkamilang.language.expression
 
 import com.vinkami.vinkamilang.language.Token
+import com.vinkami.vinkamilang.language.position.ParsingPosition
 
-class Bracket(expr: Expression, val bracL: Token, val bracR: Token): Expression(expr) {
+class Bracket(val expr: Expression, val bracL: Token, val bracR: Token, pos: ParsingPosition): Expression(pos) {
     override fun toString(): String {
-        return "($bracL $value $bracR)"
+        return "($bracL $expr $bracR)"
     }
 }

@@ -1,11 +1,13 @@
 package com.vinkami.vinkamilang.language
 
+import com.vinkami.vinkamilang.language.position.LexingPosition
+
 class Token{
     var type: TokenType
     var value: String?
-    var position: Position
+    var position: LexingPosition
 
-    constructor(section: String, position: Position) {
+    constructor(section: String, position: LexingPosition) {
         val pair = determineTokenPair(section)
 
         this.type = pair.first
@@ -13,7 +15,7 @@ class Token{
         this.position = position
     }
 
-    constructor(TT: TokenType, value: String?, position: Position) {
+    constructor(TT: TokenType, value: String?, position: LexingPosition) {
         this.type = TT
         this.value = value
         this.position = position
@@ -81,6 +83,9 @@ class Token{
             "is" -> Pair(TokenType.IS, null)
             "import" -> Pair(TokenType.IMPORT, null)
             "in" -> Pair(TokenType.IN, null)
+            "complete" -> Pair(TokenType.COMPLETE, null)
+            "incomplete" -> Pair(TokenType.INCOMPLETE, null)
+            "break" -> Pair(TokenType.BREAK, null)
 
             "EOF" -> Pair(TokenType.EOF, null)
 

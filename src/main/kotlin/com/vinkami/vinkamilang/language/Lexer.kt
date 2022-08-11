@@ -1,5 +1,7 @@
 package com.vinkami.vinkamilang.language
 
+import com.vinkami.vinkamilang.language.position.LexingPosition
+
 class Lexer(private val text: String, private val fileName: String) {
     private var pos = -1
     private val currentChar: String?
@@ -31,13 +33,13 @@ class Lexer(private val text: String, private val fileName: String) {
                     c
                 }
 
-            val position = Position(fileName, lineNumber, startPos, pos)
+            val position = LexingPosition(fileName, lineNumber, startPos, pos)
             tokens += Token(section, position)
         }
 
         // EOF token
         advance()
-        val position = Position(fileName, lineNumber, pos, pos)
+        val position = LexingPosition(fileName, lineNumber, pos, pos)
         tokens += Token("EOF", position)
 
         return combineTokens(tokens)  // Combine tokens like >= and ++
@@ -103,7 +105,7 @@ class Lexer(private val text: String, private val fileName: String) {
                 val newValue = procedure.second(currentToken, nextToken)
 
                 val ctpos = currentToken.position
-                val pos = Position(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
+                val pos = LexingPosition(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
                 tokens[i] = Token(newTT, newValue, pos)
                 tokens.removeAt(i + 1)
             } else { i++ }  // Some tokens can combine multiple times, so don't increment if a combination happens

@@ -1,5 +1,5 @@
 package com.vinkami.vinkamilang.language.exception
 
-import com.vinkami.vinkamilang.language.Position
+import com.vinkami.vinkamilang.language.position.LexingPosition
 
-class LexingException(message: String, position: Position): BaseLangException(message, position)
+class LexingException(message: String, position: LexingPosition): BaseLangException(message, position)
