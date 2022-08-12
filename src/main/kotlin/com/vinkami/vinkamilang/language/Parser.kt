@@ -44,7 +44,7 @@ class Parser(private val tokens: List<Token>) {
         val expr = when (currentToken.type) {
             TokenType.NUMBER, TokenType.L_PARAN, TokenType.IDENTIFIER -> exprMath(0)
             TokenType.IF -> exprIf()
-            TokenType.WHILE -> exprWhile()
+            TokenType.WHILE, TokenType.FOR -> exprLoop()
             TokenType.EOF -> Null()
             else -> throw ParsingException("Unexpected token $currentToken", currentToken.position)
             // TODO("Other expr types not implemented")
@@ -157,7 +157,7 @@ class Parser(private val tokens: List<Token>) {
         return If(mainCondition, mainAction, elif, elseAction, ppos)
     }
 
-    private fun exprWhile(): Expression {
+    private fun exprLoop(): Expression {  // Matches both for and while because of their similar structures
         val start = pos
         val startToken = currentToken
 
@@ -174,10 +174,10 @@ class Parser(private val tokens: List<Token>) {
             gotoNext(TokenType.L_BRACE)
             val action = exprBracket()  // { ... }
             if (tokenType == TokenType.COMPLETE) {
-                if (completeAction !is Null) throw ParsingException("While block following with multiple complete actions", currentToken.position)
+                if (completeAction !is Null) throw ParsingException("While/For block following with multiple complete actions", currentToken.position)
                 completeAction = action
             } else {
-                if (incompleteAction !is Null) throw ParsingException("While block following with multiple incomplete actions", currentToken.position)
+                if (incompleteAction !is Null) throw ParsingException("While/For block following with multiple incomplete actions", currentToken.position)
                 incompleteAction = action
             }
 
@@ -188,12 +188,6 @@ class Parser(private val tokens: List<Token>) {
         val endToken = currentToken
 
         val ppos = ParsingPosition(start, end, startToken.position, endToken.position)
-        return While(condition, mainAction, completeAction, incompleteAction, ppos)
+        return Loop(startToken.type, condition, mainAction, completeAction, incompleteAction, ppos)
     }
-
-    private fun exprFor(): Expression {
-        TODO("Not yet implemented")
-    }
-
-
 }
