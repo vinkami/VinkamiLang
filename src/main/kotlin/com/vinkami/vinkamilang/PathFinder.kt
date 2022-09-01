@@ -1,6 +1,5 @@
 package com.vinkami.vinkamilang
 
-import com.vinkami.vinkamilang.command.Commands
 import com.vinkami.vinkamilang.script.Script
 import org.bukkit.plugin.java.JavaPlugin
 

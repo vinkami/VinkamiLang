@@ -4,7 +4,8 @@ import org.bukkit.plugin.java.JavaPlugin
 
 class VinkamiLang : JavaPlugin() {
     override fun onEnable() {
-        PathFinder(this)
+        val pf = PathFinder(this)
+        getCommand("vk")!!.setExecutor(pf.cmd)
 
         saveDefaultConfig()
         logger.info("Hello World!")
