@@ -4,6 +4,11 @@ import com.vinkami.vinkamilang.language.exception.ParsingException
 import com.vinkami.vinkamilang.language.expression.*
 import com.vinkami.vinkamilang.language.position.LexingPosition
 import com.vinkami.vinkamilang.language.position.ParsingPosition
+import com.vinkami.vinkamilang.language.statement.BaseStatement
+import com.vinkami.vinkamilang.language.statement.IfStm
+import com.vinkami.vinkamilang.language.statement.LoopStm
+import com.vinkami.vinkamilang.language.expression.NullExpr
+import com.vinkami.vinkamilang.language.statement.BracketStm
 
 
 class Parser(private val tokens: List<Token>) {
@@ -39,21 +44,21 @@ class Parser(private val tokens: List<Token>) {
         skipSpace()
     }
 
-    fun parse(): Expression {
+    fun parse(): BaseStatement {
         skipSpace()
-        val expr = when (currentToken.type) {
+        val stm = when (currentToken.type) {
             TokenType.NUMBER, TokenType.L_PARAN, TokenType.IDENTIFIER -> exprMath(0)
-            TokenType.IF -> exprIf()
-            TokenType.WHILE, TokenType.FOR -> exprLoop()
-            TokenType.EOF -> Null()
+            TokenType.IF -> stmIf()
+            TokenType.WHILE, TokenType.FOR -> stmLoop()
+            TokenType.EOF -> NullExpr()
             else -> throw ParsingException("Unexpected token $currentToken", currentToken.position)
             // TODO("Other expr types not implemented")
         }
 
-        return expr
+        return stm
     }
 
-    private fun gotoNext(TT: TokenType){
+    private fun gotoNext(TT: TokenType) {
         while (currentToken.type != TT) {
             if (currentToken.type == TokenType.EOF) {
                 throw ParsingException("Script ended when expecting a $TT", currentToken.position)
@@ -62,16 +67,16 @@ class Parser(private val tokens: List<Token>) {
         }
     }
 
-    private fun exprMath(minBP: Int): Expression {
+    private fun exprMath(minBP: Int): BaseExpression {
         if (minBP != 0) {advance()}  // Advance first if it's called by itself
         skipSpace()
 
-        var lhs: Expression = if (currentToken.type == TokenType.L_PARAN) {
+        var lhs: BaseExpression = if (currentToken.type == TokenType.L_PARAN) {
             exprBracket()
         } else {
             val ctpos = currentToken.position
             val ppos = ParsingPosition(pos, pos, ctpos, ctpos)
-            Number(currentToken, ppos)
+            NumberExpr(currentToken, ppos)
         }
 
         while (true) {
@@ -85,12 +90,12 @@ class Parser(private val tokens: List<Token>) {
             val rhs = exprMath(rightBP)
             val ppos = ParsingPosition(lhs.position.start, rhs.position.end,
                                        lhs.position.startTokenPosition, rhs.position.endTokenPosition)
-            lhs = Math(op, lhs, rhs, ppos)
+            lhs = MathExpr(op, lhs, rhs, ppos)
         }
         return lhs
     }
 
-    private fun exprBracket(): Expression {
+    private fun stmBracket(): BracketStm {
         val bracketTypeL = currentToken.type
         val bracketTypeR = Constant.bracket[bracketTypeL]!!
         var paranCount = 1
@@ -114,39 +119,47 @@ class Parser(private val tokens: List<Token>) {
         val end = pos
         val endToken = currentToken
         val eofPosition = LexingPosition(endToken.position.filename, endToken.position.lineNumber,
-                                    endToken.position.end - 1, endToken.position.end - 1)
+            endToken.position.end - 1, endToken.position.end - 1)
 
         val innerTokens = tokens.subList(start + 1, end) + Token("EOF", eofPosition)
 
-        val innerExpr = if (innerTokens.isNotEmpty()) Parser(innerTokens).parse() else Null()
+        val innerStm = if (innerTokens.isNotEmpty()) Parser(innerTokens).parse() else NullExpr()
 
         val ppos = ParsingPosition(start, end, startToken.position, endToken.position)
-        return Bracket(innerExpr, startToken, endToken, ppos)
+        return BracketStm(innerStm, startToken, endToken, ppos)
     }
 
-    private fun exprIf(): Expression {
+    private fun exprBracket(): BaseExpression {
+        val bracStm = stmBracket()
+
+        if (bracStm.stm !is BaseExpression) { throw ParsingException("Expected expression inside bracket", bracStm.position.startTokenPosition) }
+
+        return BracketExpr(bracStm.stm, bracStm.bracL, bracStm.bracR, bracStm.position)
+    }
+
+    private fun stmIf(): IfStm {
         val start = pos
         val startToken = currentToken
 
         aas()
         val mainCondition = exprBracket()  // if (...) {
         aas()
-        val mainAction = exprBracket()  // { ... }
+        val mainAction = stmBracket()  // { ... }
 
-        val elif = mutableMapOf<Expression, Expression>()
+        val elif = mutableMapOf<BaseExpression, BaseStatement>()
         aas()
         while (currentToken.type == TokenType.ELIF) {
             val condition = exprBracket()  // elif (...) {
             aas()
-            val action = exprBracket()  // { ... }
+            val action = stmBracket()  // { ... }
             elif[condition] = action
             aas()
         }
 
-        var elseAction: Expression = Null()
+        var elseAction: BaseStatement = NullExpr()
         if (currentToken.type == TokenType.ELSE) {
             gotoNext(TokenType.L_BRACE)
-            elseAction = exprBracket()  // { ... }
+            elseAction = stmBracket()  // { ... }
             aas()
         }
 
@@ -154,30 +167,30 @@ class Parser(private val tokens: List<Token>) {
         val endToken = currentToken
 
         val ppos = ParsingPosition(start, end, startToken.position, endToken.position)
-        return If(mainCondition, mainAction, elif, elseAction, ppos)
+        return IfStm(mainCondition, mainAction, elif, elseAction, ppos)
     }
 
-    private fun exprLoop(): Expression {  // Matches both for and while because of their similar structures
+    private fun stmLoop(): LoopStm {  // Matches both for and while because of their similar structures
         val start = pos
         val startToken = currentToken
 
         aas()
         val condition = exprBracket()  // while (...) {
         aas()
-        val mainAction = exprBracket()  // { ... }
+        val mainAction = stmBracket()  // { ... }
 
         aas()
-        var completeAction: Expression = Null()
-        var incompleteAction: Expression = Null()
+        var completeAction: BaseStatement = NullExpr()
+        var incompleteAction: BaseStatement = NullExpr()
         while (listOf(TokenType.COMPLETE, TokenType.INCOMPLETE).contains(currentToken.type)) {
             val tokenType = currentToken.type
             gotoNext(TokenType.L_BRACE)
-            val action = exprBracket()  // { ... }
+            val action = stmBracket()  // { ... }
             if (tokenType == TokenType.COMPLETE) {
-                if (completeAction !is Null) throw ParsingException("While/For block following with multiple complete actions", currentToken.position)
+                if (completeAction !is NullExpr) throw ParsingException("While/For block following with multiple complete actions", currentToken.position)
                 completeAction = action
             } else {
-                if (incompleteAction !is Null) throw ParsingException("While/For block following with multiple incomplete actions", currentToken.position)
+                if (incompleteAction !is NullExpr) throw ParsingException("While/For block following with multiple incomplete actions", currentToken.position)
                 incompleteAction = action
             }
 
@@ -188,6 +201,6 @@ class Parser(private val tokens: List<Token>) {
         val endToken = currentToken
 
         val ppos = ParsingPosition(start, end, startToken.position, endToken.position)
-        return Loop(startToken.type, condition, mainAction, completeAction, incompleteAction, ppos)
+        return LoopStm(startToken.type, condition, mainAction, completeAction, incompleteAction, ppos)
     }
 }
