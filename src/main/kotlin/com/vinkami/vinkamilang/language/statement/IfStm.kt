@@ -1,12 +1,12 @@
-package com.vinkami.vinkamilang.language.expression
+package com.vinkami.vinkamilang.language.statement
 
-import com.vinkami.vinkamilang.language.exception.InterpretingException
-import com.vinkami.vinkamilang.language.exception.ParsingException
+import com.vinkami.vinkamilang.language.expression.BaseExpression
+import com.vinkami.vinkamilang.language.expression.NullExpr
 import com.vinkami.vinkamilang.language.position.ParsingPosition
 
-class If(val condition: Expression, val action: Expression,
-         val elif: Map<Expression, Expression>, val fallback: Expression,
-         pos: ParsingPosition): Expression(pos) {
+class IfStm(val condition: BaseExpression, val action: BaseStatement,
+            val elif: Map<BaseExpression, BaseStatement>, val fallback: BaseStatement,
+            pos: ParsingPosition): BaseStatement(pos) {
     override fun toString(): String {
       // Structure: (if (condition) -> (action) | (condition) -> (action) | (fallback))
         val sb = StringBuilder()
@@ -22,7 +22,7 @@ class If(val condition: Expression, val action: Expression,
               .append(elifAction)
         }
 
-        if (fallback !is Null) {
+        if (fallback !is NullExpr) {
             sb.append(" | (")
               .append(fallback)
               .append(")")
