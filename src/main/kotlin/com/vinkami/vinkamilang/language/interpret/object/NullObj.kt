@@ -1,4 +1,4 @@
-package com.vinkami.vinkamilang.language.`object`
+package com.vinkami.vinkamilang.language.interpret.`object`
 
 class NullObj: BaseObject {
     override val value = "null"

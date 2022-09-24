@@ -1,30 +1,25 @@
-package com.vinkami.vinkamilang.language
+package com.vinkami.vinkamilang.language.lex
 
-import com.vinkami.vinkamilang.language.position.LexingPosition
+import com.vinkami.vinkamilang.language.Constant
 
-class Lexer(private val text: String, private val fileName: String) {
-    private var pos = -1
-    private val currentChar: String?
-        get() = if (pos < text.length) text[pos].toString() else null
-    private var lineNumber: Int = 1
 
-    init {advance()}
+class Lexer(private val text: String, fileName: String) {
+    private var pos = Position(-1, 0, -1, fileName, text)
+    private val currentChar: String?  // Not Char? because Regex hates Char
+        get() = if (pos.index < text.length) text[pos.index].toString() else null
 
-    private fun advance() {
-        pos++
-        if (currentChar == "\n") {
-            lineNumber++
-        }
-    }
+    init {pos.advance(null)}
+
+    private fun advance() = pos.advance(currentChar)
 
     fun tokenize(): List<Token> {
         val tokens: MutableList<Token> = mutableListOf()
 
         while (currentChar != null) {
-            val startPos = pos
+            val startPos = pos.copy()
 
             val section =
-                if (Regex("[0-9.]") matches currentChar!!) {makeNumber()}
+                if (Regex("[\\d.]") matches currentChar!!) {makeNumber()}
                 else if (Regex("[a-zA-Z]") matches currentChar!!) {makeIdentifier()}
                 else if (Regex("[\'\"]") matches currentChar!!) {makeString()}
                 else {
@@ -33,14 +28,14 @@ class Lexer(private val text: String, private val fileName: String) {
                     c
                 }
 
-            val position = LexingPosition(fileName, lineNumber, startPos, pos)
-            tokens += Token(section, position)
+            val token = Token(section, startPos, pos.copy())
+
+            tokens += token
         }
 
         // EOF token
         advance()
-        val position = LexingPosition(fileName, lineNumber, pos, pos)
-        tokens += Token("EOF", position)
+        tokens += Token("EOF", pos.copy(), pos.copy())
 
         return combineTokens(tokens)  // Combine tokens like >= and ++
     }
@@ -48,7 +43,7 @@ class Lexer(private val text: String, private val fileName: String) {
     private fun makeNumber(): String {  // Note: Doesn't care the decimal points' number and placement
         var section = ""
 
-        while (currentChar != null && Regex("[0-9.]") matches currentChar!!) {
+        while (currentChar != null && Regex("[\\d.]") matches currentChar!!) {
             section += currentChar
             advance()
         }
@@ -68,11 +63,11 @@ class Lexer(private val text: String, private val fileName: String) {
     }
 
     private fun makeString(): String {
-        var section = "${currentChar}"
+        var section = "$currentChar"
         val quote = currentChar!!
         advance()
 
-        while (currentChar != null && (currentChar != quote || if (pos != 0) {text[pos - 1].toString() == "\\"} else true)) {
+        while (currentChar != null && (currentChar != quote || if (pos.index != 0) {text[pos.index - 1] == '\\'} else true)) {
             section += currentChar
             advance()
         }
@@ -104,12 +99,10 @@ class Lexer(private val text: String, private val fileName: String) {
                 val newTT = procedure.first
                 val newValue = procedure.second(currentToken, nextToken)
 
-                val ctpos = currentToken.position
-                val pos = LexingPosition(ctpos.filename, ctpos.lineNumber, ctpos.start, ctpos.end + 1)
-                tokens[i] = Token(newTT, newValue, pos)
+
+                tokens[i] = Token(newTT, newValue, currentToken.startPos, nextToken.endPos)
                 tokens.removeAt(i + 1)
             } else { i++ }  // Some tokens can combine multiple times, so don't increment if a combination happens
-
         }
 
         return tokens

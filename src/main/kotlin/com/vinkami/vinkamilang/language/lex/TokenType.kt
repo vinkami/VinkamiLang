@@ -1,4 +1,4 @@
-package com.vinkami.vinkamilang.language
+package com.vinkami.vinkamilang.language.lex
 
 enum class TokenType {
     // Key char

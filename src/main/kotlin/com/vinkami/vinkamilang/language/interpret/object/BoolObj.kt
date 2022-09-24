@@ -1,4 +1,4 @@
-package com.vinkami.vinkamilang.language.`object`
+package com.vinkami.vinkamilang.language.interpret.`object`
 
 class BoolObj(override val value: Boolean): BaseObject {
     override fun toString(): String {

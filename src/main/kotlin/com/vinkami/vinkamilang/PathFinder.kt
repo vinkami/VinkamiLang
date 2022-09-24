@@ -1,15 +1,16 @@
 package com.vinkami.vinkamilang
 
-import com.vinkami.vinkamilang.script.Script
+import com.vinkami.vinkamilang.language.Script
 import org.bukkit.plugin.java.JavaPlugin
 
 class PathFinder(var plugin: JavaPlugin) {
     var scripts = mutableListOf<Script>()
-    val event = Events(this)
     val cmd = Commands(this)
+
 
     init {
         this.loadScripts()
+        Events(this)
     }
 
     private fun loadScripts() {

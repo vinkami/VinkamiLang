@@ -1,7 +1,10 @@
 package com.vinkami.vinkamilang.language
 
+import com.vinkami.vinkamilang.language.lex.Token
+import com.vinkami.vinkamilang.language.lex.TokenType
 
-object Constant {
+
+internal object Constant {
     val arithmeticOp: List<TokenType> = listOf(
         TokenType.PLUS, TokenType.MINUS,
         TokenType.MULTIPLY, TokenType.DIVIDE,
@@ -15,15 +18,15 @@ object Constant {
         TokenType.GREATER, TokenType.GREATER_EQUAL,
     )
 
-    val difinitiveOp: List<TokenType> = listOf(
-        TokenType.ASSIGN,
-        TokenType.INCREMENT, TokenType.DECREMENT,
-        TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN,
-        TokenType.MULTIPLY_ASSIGN, TokenType.DIVIDE_ASSIGN,
-        TokenType.MODULO_ASSIGN, TokenType.POWER_ASSIGN,
-    )
+//    val difinitiveOp: List<TokenType> = listOf(
+//        TokenType.ASSIGN,
+//        TokenType.INCREMENT, TokenType.DECREMENT,
+//        TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN,
+//        TokenType.MULTIPLY_ASSIGN, TokenType.DIVIDE_ASSIGN,
+//        TokenType.MODULO_ASSIGN, TokenType.POWER_ASSIGN,
+//    )
 
-    val operator: List<TokenType> = arithmeticOp + comparitiveOp + difinitiveOp
+//    val operator: List<TokenType> = arithmeticOp + comparitiveOp + difinitiveOp
 
     val bracket: Map<TokenType, TokenType> = mapOf(
         TokenType.L_PARAN to TokenType.R_PARAN,
@@ -42,23 +45,23 @@ object Constant {
         TokenType.GREATER to Pair(2, 3), TokenType.GREATER_EQUAL to Pair(2, 3),
     )
 
-    val conbinableTokens: Map<Pair<TokenType, TokenType>, Pair<TokenType, (Token, Token) -> String?>> = mapOf(
-        Pair(TokenType.PLUS, TokenType.PLUS) to Pair(TokenType.INCREMENT) { _, _ -> null },
-        Pair(TokenType.PLUS, TokenType.ASSIGN) to Pair(TokenType.PLUS_ASSIGN) { _, _ -> null },
+    val conbinableTokens: Map<Pair<TokenType, TokenType>, Pair<TokenType, (Token, Token) -> String>> = mapOf(
+        Pair(TokenType.PLUS, TokenType.PLUS) to Pair(TokenType.INCREMENT) { _, _ -> "++" },
+        Pair(TokenType.PLUS, TokenType.ASSIGN) to Pair(TokenType.PLUS_ASSIGN) { _, _ -> "+=" },
 
-        Pair(TokenType.MINUS, TokenType.MINUS) to Pair(TokenType.DECREMENT) { _, _ -> null },
-        Pair(TokenType.MINUS, TokenType.ASSIGN) to Pair(TokenType.MINUS_ASSIGN) { _, _ -> null },
+        Pair(TokenType.MINUS, TokenType.MINUS) to Pair(TokenType.DECREMENT) { _, _ -> "--" },
+        Pair(TokenType.MINUS, TokenType.ASSIGN) to Pair(TokenType.MINUS_ASSIGN) { _, _ -> "-=" },
 
-        Pair(TokenType.MULTIPLY, TokenType.MULTIPLY) to Pair(TokenType.POWER) { _, _ -> null },
-        Pair(TokenType.MULTIPLY, TokenType.ASSIGN) to Pair(TokenType.MULTIPLY_ASSIGN) { _, _ -> null },
+        Pair(TokenType.MULTIPLY, TokenType.MULTIPLY) to Pair(TokenType.POWER) { _, _ -> "**" },
+        Pair(TokenType.MULTIPLY, TokenType.ASSIGN) to Pair(TokenType.MULTIPLY_ASSIGN) { _, _ -> "*=" },
 
-        Pair(TokenType.POWER, TokenType.ASSIGN) to Pair(TokenType.POWER_ASSIGN) { _, _ -> null },
+        Pair(TokenType.POWER, TokenType.ASSIGN) to Pair(TokenType.POWER_ASSIGN) { _, _ -> "**=" },
 
-        Pair(TokenType.MODULO, TokenType.ASSIGN) to Pair(TokenType.MODULO_ASSIGN) { _, _ -> null },
+        Pair(TokenType.MODULO, TokenType.ASSIGN) to Pair(TokenType.MODULO_ASSIGN) { _, _ -> "%=" },
 
-        Pair(TokenType.LESS, TokenType.ASSIGN) to Pair(TokenType.LESS_EQUAL) { _, _ -> null },
-        Pair(TokenType.GREATER, TokenType.ASSIGN) to Pair(TokenType.GREATER_EQUAL) { _, _ -> null },
-        Pair(TokenType.NOT, TokenType.ASSIGN) to Pair(TokenType.NOT_EQUAL) { _, _-> null },
+        Pair(TokenType.LESS, TokenType.ASSIGN) to Pair(TokenType.LESS_EQUAL) { _, _ -> "<=" },
+        Pair(TokenType.GREATER, TokenType.ASSIGN) to Pair(TokenType.GREATER_EQUAL) { _, _ -> ">=" },
+        Pair(TokenType.NOT, TokenType.ASSIGN) to Pair(TokenType.NOT_EQUAL) { _, _ -> "!=" },
 
         Pair(TokenType.SPACE, TokenType.SPACE) to Pair(TokenType.SPACE) { t1, t2 -> t1.value + t2.value },
         Pair(TokenType.LINEBREAK, TokenType.LINEBREAK) to Pair(TokenType.LINEBREAK) { t1, t2 -> t1.value + t2.value },
