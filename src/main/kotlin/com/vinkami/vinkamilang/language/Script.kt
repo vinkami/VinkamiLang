@@ -13,7 +13,7 @@ import java.io.File
 class Script {
     var code = ""
     val name: String
-    var hasError = ::error.isInitialized
+    val hasError get() = ::error.isInitialized
 
     lateinit var tokens: List<Token>
     lateinit var node: BaseNode
