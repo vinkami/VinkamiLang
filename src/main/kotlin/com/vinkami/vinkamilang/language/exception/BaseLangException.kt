@@ -8,7 +8,7 @@ abstract class BaseLangException(message: String, private val startPos: Position
             ${this::class.simpleName}: $message
             File: ${startPos.fileName}, line: ${startPos.line + 1}
             
-            ${startPos.code[startPos.line]}
+            ${startPos.code.split('\n')[startPos.line]}
             ${makeArrow(startPos, endPos)}
         """.trimIndent()
     }
