@@ -46,10 +46,10 @@ internal object Constant {
     )
 
     val conbinableTokens: Map<Pair<TokenType, TokenType>, Pair<TokenType, (Token, Token) -> String>> = mapOf(
-        Pair(TokenType.PLUS, TokenType.PLUS) to Pair(TokenType.INCREMENT) { _, _ -> "++" },
+//        Pair(TokenType.PLUS, TokenType.PLUS) to Pair(TokenType.INCREMENT) { _, _ -> "++" },
         Pair(TokenType.PLUS, TokenType.ASSIGN) to Pair(TokenType.PLUS_ASSIGN) { _, _ -> "+=" },
 
-        Pair(TokenType.MINUS, TokenType.MINUS) to Pair(TokenType.DECREMENT) { _, _ -> "--" },
+//        Pair(TokenType.MINUS, TokenType.MINUS) to Pair(TokenType.DECREMENT) { _, _ -> "--" },
         Pair(TokenType.MINUS, TokenType.ASSIGN) to Pair(TokenType.MINUS_ASSIGN) { _, _ -> "-=" },
 
         Pair(TokenType.MULTIPLY, TokenType.MULTIPLY) to Pair(TokenType.POWER) { _, _ -> "**" },
