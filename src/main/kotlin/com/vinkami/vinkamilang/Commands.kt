@@ -18,7 +18,7 @@ class Commands(private val pf: PathFinder): CommandExecutor {
             "run" -> vkrun(sender, args[1])
             "runlex" -> vkrunlex(sender, args[1])
             "runparse" -> vkrunparse(sender, args[1])
-            "execute" -> vkexecute(sender, args[1])
+            "execute" -> vkexecute(sender, args.drop(1))
 
             "help", "?" -> vkhelp(sender)
             else -> vkhelp(sender)
@@ -104,7 +104,8 @@ class Commands(private val pf: PathFinder): CommandExecutor {
         )
     }
 
-    private fun vkexecute(player: CommandSender, code: String) {
+    private fun vkexecute(player: CommandSender, codes: List<String>) {
+        val code = codes.joinToString(" ")
         val script = Script("<stdin>", code)
         player.sendMessage(script.run())
     }
