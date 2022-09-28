@@ -11,7 +11,7 @@ import com.vinkami.vinkamilang.language.parse.node.BaseNode
 import java.io.File
 
 class Script {
-    var code = ""
+    val code: String
     val name: String
     val hasError get() = ::error.isInitialized
 
@@ -25,9 +25,7 @@ class Script {
             .toString()
             .replace("\\", ".")
             .replace(".vk", "")
-        file.forEachLine {
-            code += it + "\n"
-        }
+        code = file.readText()
     }
 
     constructor(name: String, code: String) {
