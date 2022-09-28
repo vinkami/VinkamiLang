@@ -1,5 +1,6 @@
 package com.vinkami.vinkamilang.language.interpret
 
+import com.vinkami.vinkamilang.language.exception.BaseLangException
 import com.vinkami.vinkamilang.language.exception.SyntaxError
 import com.vinkami.vinkamilang.language.exception.UnknownNodeError
 import com.vinkami.vinkamilang.language.interpret.`object`.NullObj
@@ -19,6 +20,7 @@ class Interpreter(val node: BaseNode) {
             is UnaryOpNode -> interpretUnaryOp(node)
             is BracketNode -> interpretBracket(node)
             is NullNode -> InterpretResult(NullObj(node.startPos, node.endPos))
+            is IfNode -> interpretIf(node)
             else -> InterpretResult(UnknownNodeError(node))
         }
     }
@@ -65,5 +67,30 @@ class Interpreter(val node: BaseNode) {
 
     private fun interpretBracket(node: BracketNode): InterpretResult {
         return interpret(node.innerNode)
+    }
+
+    private fun interpretIf(node: IfNode) : InterpretResult {
+        val res = InterpretResult(NullObj(node.startPos, node.endPos))
+
+        try {
+            val cond = res(interpret(node.condition)).obj
+            if (cond.boolVal()) {
+                return interpret(node.action)
+            }
+
+            for ((elifCondNode, elifActionNode) in node.elif) {
+                val elifCond = res(interpret(elifCondNode)).obj
+                if (elifCond.boolVal()) {
+                    return interpret(elifActionNode)
+                }
+            }
+
+            if (node.elseAction != null) {
+                return interpret(node.elseAction)
+            }
+
+        } catch (e: BaseLangException) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+
+        return res
     }
 }

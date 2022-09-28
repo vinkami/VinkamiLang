@@ -3,6 +3,7 @@ package com.vinkami.vinkamilang.language.parse
 import com.vinkami.vinkamilang.language.Constant
 import com.vinkami.vinkamilang.language.exception.BaseLangException
 import com.vinkami.vinkamilang.language.exception.IllegalCharError
+import com.vinkami.vinkamilang.language.exception.NotYourFaultError
 import com.vinkami.vinkamilang.language.exception.SyntaxError
 import com.vinkami.vinkamilang.language.lex.Token
 import com.vinkami.vinkamilang.language.lex.TokenType
@@ -53,7 +54,8 @@ class Parser(private val tokens: List<Token>) {
         return when (currentToken.type) {
             TokenType.NUMBER, TokenType.L_PARAN -> parseBinOp(0)
             TokenType.PLUS, TokenType.MINUS -> parseUnaryOp()
-//            TokenType.IF -> stmIf()
+            in Constant.bracket.keys -> parseBracket()
+            TokenType.IF -> parseIf()
 //            TokenType.WHILE, TokenType.FOR -> stmLoop()
             TokenType.EOF -> ParseResult(NullNode(currentToken))
             TokenType.UNKNOWN -> ParseResult(IllegalCharError(currentToken))
@@ -74,68 +76,112 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseBinOp(minBP: Int): ParseResult {
         val res = ParseResult()
-        if (minBP != 0) res(advance())
-        res(skipSpace())
 
-        var lhs: BaseNode = if (currentToken.type == TokenType.L_PARAN) {
-            val brac = res(parseBracket())
-            res.hasError && return res
-            brac.node
-        } else {
-            NumberNode(currentToken)
-        }
+        try {
+            if (minBP != 0) advance()
+            skipSpace()
 
-        while (true) {
-            val op = nextNonSpaceToken()
-            if (!(Constant.arithmeticOp + Constant.comparitiveOp).contains(op.type)) break
+            var lhs: BaseNode = if (currentToken.type == TokenType.L_PARAN) {
+                val brac = res(parseBracket())
+                brac.node
+            } else {
+                NumberNode(currentToken)
+            }
 
-            val (leftBP, rightBP) = Constant.bindingPower[op.type]!!
-            if (leftBP < minBP) {break}
-            res(ass())
+            while (true) {
+                val op = nextNonSpaceToken()
+                if (!(Constant.arithmeticOp + Constant.comparitiveOp).contains(op.type)) break
 
-            val rhs = res(parseBinOp(rightBP))
-            res.hasError && return res
-            lhs = BinOpNode(lhs, op, rhs.node)
-        }
-        return res(lhs)
+                val (leftBP, rightBP) = Constant.bindingPower[op.type]!!
+                if (leftBP < minBP) {break}
+                ass()
+
+                val rhs = res(parseBinOp(rightBP)).node
+                lhs = BinOpNode(lhs, op, rhs)
+            }
+
+            return res(lhs)
+        } catch (e: BaseLangException) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
     }
 
     private fun parseUnaryOp(): ParseResult {
         val res = ParseResult()
-        val op = currentToken
-        res(ass())
-        val node = res(parse())
-        res.hasError && return res
-        return res(UnaryOpNode(op, node.node))
+
+        return try {
+            val op = currentToken
+            ass()
+            val node = res(parse())
+            res(UnaryOpNode(op, node.node))
+        } catch (e: BaseLangException) { res(e) } catch (e: UninitializedPropertyAccessException) { res }
     }
 
     private fun parseBracket(): ParseResult {
         val res = ParseResult()
 
-        val bracketTypeL = currentToken.type
-        val bracketTypeR = Constant.bracket[bracketTypeL]!!
-        var paranCount = 1
-        val start = pos
-        val startToken = currentToken
+        try {
+            val bracketTypeL = currentToken.type
+            if (bracketTypeL !in Constant.bracket.keys) throw NotYourFaultError("Illegal bracket type $bracketTypeL", currentToken.startPos, currentToken.endPos)
+            val bracketTypeR = Constant.bracket[bracketTypeL]
 
-        while (paranCount > 0) {  // Find the matching closing bracket in terms of number
-            res(advance())
-            val tt = currentToken.type
-            if (tt == TokenType.EOF) return res(SyntaxError("Script ended when expecting a $bracketTypeR", currentToken.startPos, currentToken.endPos))
-            else if (Constant.bracket.keys.contains(tt)) paranCount++
-            else if (Constant.bracket.values.contains(tt)) paranCount--
-        }
+            var paranCount = 1
+            val start = pos
+            val startToken = currentToken
 
-        // Confirm the "matching" bracket is the same type
-        if (currentToken.type != bracketTypeR) res(SyntaxError("Expected $bracketTypeR, got ${currentToken.type}", currentToken.startPos, currentToken.endPos))
+            while (paranCount > 0) {  // Find the matching closing bracket in terms of number
+                advance()
+                val tt = currentToken.type
+                if (tt == TokenType.EOF) throw SyntaxError("Script ended when expecting a $bracketTypeR", currentToken.startPos, currentToken.endPos)
+                else if (Constant.bracket.keys.contains(tt)) paranCount++
+                else if (Constant.bracket.values.contains(tt)) paranCount--
+            }
 
-        val endToken = currentToken
-        val eof = Token(TokenType.EOF, "EOF", endToken.startPos, endToken.endPos)
-        val innerTokens = tokens.subList(start + 1, pos) + eof
-        val innerResult = res(if (innerTokens.isNotEmpty()) Parser(innerTokens).parse() else ParseResult(NullNode(currentToken)))
+            // Confirm the "matching" bracket is the same type
+            if (currentToken.type != bracketTypeR) throw SyntaxError("Expected $bracketTypeR, got ${currentToken.type}", currentToken.startPos, currentToken.endPos)
 
-        res.hasError && return res
-        return res(BracketNode(startToken, innerResult.node, endToken))
+            val endToken = currentToken
+            val eof = Token(TokenType.EOF, "EOF", endToken.startPos, endToken.endPos)
+            val innerTokens = tokens.subList(start + 1, pos) + eof
+            val innerResult = res(if (innerTokens.isNotEmpty()) Parser(innerTokens).parse() else ParseResult(NullNode(currentToken)))
+
+            return res(BracketNode(startToken, innerResult.node, endToken))
+
+        } catch (e: BaseLangException) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+    }
+
+    private fun parseIf(): ParseResult {
+        val res = ParseResult()
+        val startPos = currentToken.startPos
+
+        try {
+            ass()
+            val mainCond = res(parseBracket()).node
+            ass()
+            val mainAction = res(parseBracket()).node
+            var endPos = currentToken.endPos
+
+            ass()
+            val elif = mutableMapOf<BaseNode, BaseNode>()
+            while (currentToken.type == TokenType.ELIF) {
+                ass()
+                val cond = res(parseBracket()).node
+                ass()
+                val action = res(parseBracket()).node
+
+                endPos = currentToken.endPos
+                elif[cond] = action
+                ass()
+            }
+
+            var elseAction: BaseNode? = null
+            if (currentToken.type == TokenType.ELSE) {
+                ass()
+                elseAction = res(parseBracket()).node
+                endPos = currentToken.endPos
+            }
+
+            return res(IfNode(mainCond, mainAction, elif, elseAction, startPos, endPos))
+
+        } catch (e: BaseLangException) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
     }
 
 
