@@ -6,7 +6,7 @@
 
     <groupId>com.vinkami</groupId>
     <artifactId>VinkamiLang</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.0-Alpha</version>
     <packaging>jar</packaging>
 
     <name>VinkamiLang</name>
