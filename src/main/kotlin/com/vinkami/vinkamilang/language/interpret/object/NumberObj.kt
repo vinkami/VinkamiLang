@@ -4,6 +4,8 @@ import com.vinkami.vinkamilang.language.lex.Position
 import kotlin.math.pow
 
 class NumberObj(override val value: Float, override val startPos: Position, override val endPos: Position): BaseObject {
+    override fun boolVal(): Boolean = value != 0f
+
     override fun toString(): String {
         return value.toString()
     }
