@@ -103,7 +103,7 @@ class Token {
                     Pair(TokenType.STRING, section.substring(1, section.length - 1))
                 } else if (Regex("^ +$").matches(section)) {
                     Pair(TokenType.SPACE, section)
-                } else if (Regex("^\n+$").matches(section)) {
+                } else if (Regex("^[\r\n]+$").matches(section)) {
                     Pair(TokenType.LINEBREAK, section)
                 } else {
                     Pair(TokenType.UNKNOWN, section)
