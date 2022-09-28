@@ -14,10 +14,10 @@ class Commands(private val pf: PathFinder): CommandExecutor {
         when (args[0].lowercase()) {
             "reload" -> vkreload(sender)
             "scripts" -> vkscripts(sender)
-            "print" -> vkprint(sender, args[1])
-            "run" -> vkrun(sender, args[1])
-            "runlex" -> vkrunlex(sender, args[1])
-            "runparse" -> vkrunparse(sender, args[1])
+            "print" -> vkprint(sender, args.getOrElse(1) { "main" })
+            "run" -> vkrun(sender, args.getOrElse(1) { "main" })
+            "runlex" -> vkrunlex(sender, args.getOrElse(1) { "main" })
+            "runparse" -> vkrunparse(sender, args.getOrElse(1) { "main" })
             "execute" -> vkexecute(sender, args.drop(1))
 
             "help", "?" -> vkhelp(sender)
