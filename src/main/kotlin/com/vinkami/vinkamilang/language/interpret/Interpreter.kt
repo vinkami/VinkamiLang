@@ -1,6 +1,7 @@
 package com.vinkami.vinkamilang.language.interpret
 
-import com.vinkami.vinkamilang.language.exception.BaseLangException
+import com.vinkami.vinkamilang.language.exception.BaseError
+import com.vinkami.vinkamilang.language.exception.NotYourFaultError
 import com.vinkami.vinkamilang.language.exception.SyntaxError
 import com.vinkami.vinkamilang.language.exception.UnknownNodeError
 import com.vinkami.vinkamilang.language.interpret.`object`.NullObj
@@ -21,6 +22,7 @@ class Interpreter(val node: BaseNode) {
             is BracketNode -> interpretBracket(node)
             is NullNode -> InterpretResult(NullObj(node.startPos, node.endPos))
             is IfNode -> interpretIf(node)
+            is LoopNode -> interpretLoop(node)
             else -> InterpretResult(UnknownNodeError(node))
         }
     }
@@ -38,18 +40,24 @@ class Interpreter(val node: BaseNode) {
     private fun interpretBinOp(node: BinOpNode): InterpretResult {
         val res = InterpretResult()
 
-        val left = res(interpret(node.left)).also{res.hasError && return res}.obj
-        val right = res(interpret(node.right)).also{res.hasError && return res}.obj
+        return try {
+            val left = res(interpret(node.left)).obj
+            val right = res(interpret(node.right)).obj
 
 
-        return when (node.op.type) {
-            TokenType.PLUS -> res(left + right)
-            TokenType.MINUS -> res(left - right)
-            TokenType.MULTIPLY -> res(left * right)
-            TokenType.DIVIDE -> res(left / right)
-            TokenType.MODULO -> res(left % right)
-            TokenType.POWER -> res(left.power(right))
-            else -> res(UnknownNodeError(node))
+            when (node.op.type) {
+                TokenType.PLUS -> res(left + right)
+                TokenType.MINUS -> res(left - right)
+                TokenType.MULTIPLY -> res(left * right)
+                TokenType.DIVIDE -> res(left / right)
+                TokenType.MODULO -> res(left % right)
+                TokenType.POWER -> res(left.power(right))
+                else -> throw UnknownNodeError(node)
+            }
+        }  catch (e: BaseError) {
+            res(e)
+        } catch (e: UninitializedPropertyAccessException) {
+            res
         }
     }
 
@@ -89,7 +97,35 @@ class Interpreter(val node: BaseNode) {
                 return interpret(node.elseAction)
             }
 
-        } catch (e: BaseLangException) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+
+        return res
+    }
+
+    private fun interpretLoop(node: LoopNode) : InterpretResult {
+        val res = InterpretResult(NullObj(node.startPos, node.endPos))
+
+        try {
+            var complete = true
+            if (node.loopTokenType == TokenType.WHILE) {
+                var cond = res(interpret(node.condition)).obj
+
+                while (cond.boolVal()) {
+                    res(interpret(node.mainAction))
+                    if (res.interrupt != null) {
+                        complete = false
+                        break
+                    }
+                    cond = res(interpret(node.condition)).obj
+                }
+            } else throw NotYourFaultError("Unknown loop token type: ${node.loopTokenType}", node.startPos, node.endPos)
+
+            if (complete) {
+                res(interpret(node.compAction ?: NullNode(node.startPos, node.endPos)))
+            } else {
+                res(interpret(node.incompAction ?: NullNode(node.startPos, node.endPos)))
+            }
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
         return res
     }
