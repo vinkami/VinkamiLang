@@ -1,7 +1,7 @@
 package com.vinkami.vinkamilang.language.parse
 
 import com.vinkami.vinkamilang.language.Constant
-import com.vinkami.vinkamilang.language.exception.BaseLangException
+import com.vinkami.vinkamilang.language.exception.BaseError
 import com.vinkami.vinkamilang.language.exception.IllegalCharError
 import com.vinkami.vinkamilang.language.exception.NotYourFaultError
 import com.vinkami.vinkamilang.language.exception.SyntaxError
@@ -27,7 +27,7 @@ class Parser(private val tokens: List<Token>) {
 
     init {advance()}
 
-    private fun advance(): BaseLangException? {
+    private fun advance(): BaseError? {
         if (pos  == tokens.size - 1) {
             return SyntaxError("Unexpected end of file", currentToken.startPos, currentToken.endPos)
         }
@@ -35,14 +35,14 @@ class Parser(private val tokens: List<Token>) {
         return null
     }
 
-    private fun skipSpace(): BaseLangException? {
+    private fun skipSpace(): BaseError? {
         while (listOf(TokenType.SPACE, TokenType.LINEBREAK).contains(currentToken.type)) {
             advance().let {if (it != null) return it}
         }
         return null
     }
 
-    private fun ass(): BaseLangException? {
+    private fun ass(): BaseError? {
         advance().let { if (it != null) return it }
         skipSpace().let { if (it != null) return it }
         return null
@@ -56,7 +56,7 @@ class Parser(private val tokens: List<Token>) {
             TokenType.PLUS, TokenType.MINUS -> parseUnaryOp()
             in Constant.bracket.keys -> parseBracket()
             TokenType.IF -> parseIf()
-//            TokenType.WHILE, TokenType.FOR -> stmLoop()
+            TokenType.WHILE, TokenType.FOR -> parseLoop()
             TokenType.EOF -> ParseResult(NullNode(currentToken))
             TokenType.UNKNOWN -> ParseResult(IllegalCharError(currentToken))
             else -> ParseResult(SyntaxError("Unexpected token ${currentToken.type}", currentToken.startPos, currentToken.endPos))
@@ -101,7 +101,7 @@ class Parser(private val tokens: List<Token>) {
             }
 
             return res(lhs)
-        } catch (e: BaseLangException) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
     }
 
     private fun parseUnaryOp(): ParseResult {
@@ -112,7 +112,7 @@ class Parser(private val tokens: List<Token>) {
             ass()
             val node = res(parse())
             res(UnaryOpNode(op, node.node))
-        } catch (e: BaseLangException) { res(e) } catch (e: UninitializedPropertyAccessException) { res }
+        } catch (e: BaseError) { res(e) } catch (e: UninitializedPropertyAccessException) { res }
     }
 
     private fun parseBracket(): ParseResult {
@@ -145,7 +145,7 @@ class Parser(private val tokens: List<Token>) {
 
             return res(BracketNode(startToken, innerResult.node, endToken))
 
-        } catch (e: BaseLangException) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
     }
 
     private fun parseIf(): ParseResult {
@@ -181,7 +181,39 @@ class Parser(private val tokens: List<Token>) {
 
             return res(IfNode(mainCond, mainAction, elif, elseAction, startPos, endPos))
 
-        } catch (e: BaseLangException) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+    }
+
+    private fun parseLoop() : ParseResult {
+        val res = ParseResult()
+        val startPos = currentToken.startPos
+        val loopTT = currentToken.type
+
+        try {
+            ass()
+            val condition = res(parseBracket()).node
+            ass()
+            val mainAction = res(parseBracket()).node
+            var endPos = currentToken.endPos
+
+            ass()
+            var compAction: BaseNode? = null
+            var incompAction: BaseNode? = null
+            while (currentToken.type in Constant.loopCompleteTT) {
+                val tt = currentToken.type
+                ass()
+                when (tt) {
+                    TokenType.COMPLETE -> compAction = res(parseBracket()).node
+                    TokenType.INCOMPLETE -> incompAction = res(parseBracket()).node
+                    else -> throw NotYourFaultError("Illegal loop complete type $tt", currentToken.startPos, currentToken.endPos)
+                }
+                endPos = currentToken.endPos
+                ass()
+            }
+
+            return res(LoopNode(loopTT, condition, mainAction, compAction, incompAction, startPos, endPos))
+
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
     }
 
 

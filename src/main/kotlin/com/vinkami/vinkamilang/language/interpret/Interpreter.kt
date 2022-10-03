@@ -114,6 +114,7 @@ class Interpreter(val node: BaseNode) {
                     res(interpret(node.mainAction))
                     if (res.interrupt != null) {
                         complete = false
+                        res.clearInterrupt()
                         break
                     }
                     cond = res(interpret(node.condition)).obj

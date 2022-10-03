@@ -66,4 +66,8 @@ internal object Constant {
         Pair(TokenType.SPACE, TokenType.SPACE) to Pair(TokenType.SPACE) { t1, t2 -> t1.value + t2.value },
         Pair(TokenType.LINEBREAK, TokenType.LINEBREAK) to Pair(TokenType.LINEBREAK) { t1, t2 -> t1.value + t2.value },
     )
+
+    val loopCompleteTT: List<TokenType> = listOf(
+        TokenType.COMPLETE, TokenType.INCOMPLETE
+    )
 }
