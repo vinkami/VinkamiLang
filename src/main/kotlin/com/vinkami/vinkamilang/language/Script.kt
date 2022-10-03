@@ -1,7 +1,7 @@
 package com.vinkami.vinkamilang.language
 
 import com.vinkami.vinkamilang.PathFinder
-import com.vinkami.vinkamilang.language.exception.BaseLangException
+import com.vinkami.vinkamilang.language.exception.BaseError
 import com.vinkami.vinkamilang.language.interpret.Interpreter
 import com.vinkami.vinkamilang.language.interpret.`object`.BaseObject
 import com.vinkami.vinkamilang.language.lex.Lexer
@@ -18,7 +18,7 @@ class Script {
     lateinit var tokens: List<Token>
     lateinit var node: BaseNode
     lateinit var value: BaseObject
-    lateinit var error: BaseLangException
+    lateinit var error: BaseError
 
     constructor(file: File, pf: PathFinder) {
         this.name = file.relativeTo(pf.plugin.dataFolder.resolve("scripts"))
