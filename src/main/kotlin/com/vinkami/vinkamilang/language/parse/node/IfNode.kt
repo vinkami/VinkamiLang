@@ -2,8 +2,9 @@ package com.vinkami.vinkamilang.language.parse.node
 
 import com.vinkami.vinkamilang.language.lex.Position
 
-class IfNode(val condition: BaseNode, val action: BaseNode, val elif: MutableMap<BaseNode, BaseNode>, val elseAction: BaseNode?, startPos: Position, endPos: Position):
-    BaseNode(startPos, endPos) {
+class IfNode(val condition: BaseNode, val action: BaseNode,
+             val elif: MutableMap<BaseNode, BaseNode>, val elseAction: BaseNode?,
+             startPos: Position, endPos: Position): BaseNode(startPos, endPos) {
 
     override fun toString(): String {
         val sb = StringBuilder()

@@ -21,7 +21,7 @@ abstract class BaseLangException(message: String, private val startPos: Position
         }
 
         val errorLen = endPos.column - startPos.column
-        for (i in 0 until errorLen) {
+        for (i in 0 until errorLen-1) {
             result.append("^")
         }
 

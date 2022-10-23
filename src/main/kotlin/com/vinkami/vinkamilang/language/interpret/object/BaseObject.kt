@@ -7,7 +7,7 @@ interface BaseObject {
     val value: Any
     val startPos: Position
     val endPos: Position
-    fun boolVal(): Boolean
+    fun boolVal(): Boolean = true
 
     operator fun plus(other: BaseObject): BaseObject = throw SyntaxError("Can't add $this and $other", startPos, endPos)
     operator fun minus(other: BaseObject): BaseObject = throw SyntaxError("Can't subtract $this by $other", startPos, endPos)
