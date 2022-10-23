@@ -99,8 +99,10 @@ class Token {
                     Pair(TokenType.NUMBER, section)
                 } else if (Regex("^[a-zA-Z_][a-zA-Z0-9_]*$").matches(section)) {
                     Pair(TokenType.IDENTIFIER, section)
-                } else if (Regex("^\"([^\\\\\"]|\\\\.)*\"\$").matches(section) || Regex("^'([^\\\\']|\\\\.)*'\$").matches(section)) {
+                } else if (Regex("^(?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')\$").matches(section)) {  // see https://stackoverflow.com/questions/481282/how-can-i-match-double-quoted-strings-with-escaped-double-quote-characters
                     Pair(TokenType.STRING, section.substring(1, section.length - 1))
+                } else if (Regex("^\$[a-zA-Z0-9_]*$").matches(section)) {
+                    Pair(TokenType.VARIABLE, section.substring(1))
                 } else if (Regex("^ +$").matches(section)) {
                     Pair(TokenType.SPACE, section)
                 } else if (Regex("^[\r\n]+$").matches(section)) {

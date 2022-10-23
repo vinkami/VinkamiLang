@@ -49,19 +49,35 @@ class Parser(private val tokens: List<Token>) {
     }
 
     fun parse(): ParseResult {
-        skipSpace().let { if (it != null) return ParseResult(it) }
+        val res = ParseResult()
+        val procedures = mutableListOf<BaseNode>()
+        val startPos = currentToken.startPos
 
-        return when (currentToken.type) {
-            TokenType.NUMBER, TokenType.L_PARAN -> parseBinOp(0)
-            TokenType.PLUS, TokenType.MINUS -> parseUnaryOp()
-            in Constant.bracket.keys -> parseBracket()
-            TokenType.IF -> parseIf()
-            TokenType.WHILE, TokenType.FOR -> parseLoop()
-            TokenType.EOF -> ParseResult(NullNode(currentToken))
-            TokenType.UNKNOWN -> ParseResult(IllegalCharError(currentToken))
-            else -> ParseResult(SyntaxError("Unexpected token ${currentToken.type}", currentToken.startPos, currentToken.endPos))
-            // TODO("Other expr types not implemented")
-        }
+        try {
+            skipSpace()
+            while (currentToken.type != TokenType.EOF) {
+                val currentResult: ParseResult = when (currentToken.type) {
+                    TokenType.NUMBER -> parseBinOp(0)
+                    TokenType.PLUS, TokenType.MINUS -> parseUnaryOp()
+                    TokenType.VARIABLE -> parseVar()
+                    in Constant.bracket.keys -> parseBracket()
+                    TokenType.IF -> parseIf()
+                    TokenType.WHILE, TokenType.FOR -> parseLoop()
+                    TokenType.EOF -> ParseResult(NullNode(currentToken))
+                    TokenType.UNKNOWN -> ParseResult(IllegalCharError(currentToken))
+                    else -> ParseResult(SyntaxError("Unexpected token ${currentToken.type}", currentToken.startPos, currentToken.endPos))
+                    // TODO("Other expr types not implemented")
+                }
+                if (currentResult.hasError) return currentResult
+
+                procedures += currentResult.node
+                ass()
+            }
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+        val endPos = currentToken.endPos
+
+        if (procedures.size == 1) return res(procedures[0])
+        return res(ProcedralNode(procedures, startPos, endPos))
     }
 
 //    private fun gotoNext(TT: TokenType): BaseLangException? {
@@ -81,38 +97,61 @@ class Parser(private val tokens: List<Token>) {
             if (minBP != 0) advance()
             skipSpace()
 
-            var lhs: BaseNode = if (currentToken.type == TokenType.L_PARAN) {
+            val lhs: BaseNode = if (currentToken.type == TokenType.L_PARAN) {
                 val brac = res(parseBracket())
                 brac.node
             } else {
                 NumberNode(currentToken)
             }
 
-            while (true) {
-                val op = nextNonSpaceToken()
-                if (!(Constant.arithmeticOp + Constant.comparitiveOp).contains(op.type)) break
+            res(processBinOp(minBP, res, lhs))
 
-                val (leftBP, rightBP) = Constant.bindingPower[op.type]!!
-                if (leftBP < minBP) {break}
-                ass()
-
-                val rhs = res(parseBinOp(rightBP)).node
-                lhs = BinOpNode(lhs, op, rhs)
-            }
-
-            return res(lhs)
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+
+        return res
+    }
+
+    private fun processBinOp(minBP: Int, res: ParseResult, currentNode: BaseNode): BaseNode {
+        var lhs = currentNode
+
+        while (true) {
+            val op = nextNonSpaceToken()
+            if (!(Constant.arithmeticOp + Constant.comparitiveOp).contains(op.type)) break
+
+            val (leftBP, rightBP) = Constant.bindingPower[op.type]!!
+            if (leftBP < minBP) {break}
+            ass()
+
+            val rhs = res(parseBinOp(rightBP)).node
+            lhs = BinOpNode(lhs, op, rhs)
+        }
+
+        return lhs
     }
 
     private fun parseUnaryOp(): ParseResult {
         val res = ParseResult()
 
-        return try {
+        try {
             val op = currentToken
             ass()
             val node = res(parse())
             res(UnaryOpNode(op, node.node))
-        } catch (e: BaseError) { res(e) } catch (e: UninitializedPropertyAccessException) { res }
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+
+        return res
+    }
+
+    private fun parseVar(): ParseResult {
+        val res = ParseResult()
+
+        try {
+            val node = VarNode(currentToken)
+            res(processBinOp(0, res, node))
+            // TODO: Add support for var assignment
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+
+        return res
     }
 
     private fun parseBracket(): ParseResult {
@@ -142,8 +181,13 @@ class Parser(private val tokens: List<Token>) {
             val eof = Token(TokenType.EOF, "EOF", endToken.startPos, endToken.endPos)
             val innerTokens = tokens.subList(start + 1, pos) + eof
             val innerResult = res(if (innerTokens.isNotEmpty()) Parser(innerTokens).parse() else ParseResult(NullNode(currentToken)))
+            if (innerResult.hasError) throw innerResult.error
 
-            return res(BracketNode(startToken, innerResult.node, endToken))
+            val node = BracketNode(startToken, innerResult.node, endToken)
+            return res(
+                if (bracketTypeL == TokenType.L_PARAN) processBinOp(0, res, node)  // Try to continue parsing the bracket as a binop, return itself if not anyway
+                else node
+            )
 
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
     }
@@ -184,7 +228,7 @@ class Parser(private val tokens: List<Token>) {
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
     }
 
-    private fun parseLoop() : ParseResult {
+    private fun parseLoop(): ParseResult {
         val res = ParseResult()
         val startPos = currentToken.startPos
         val loopTT = currentToken.type
@@ -217,7 +261,8 @@ class Parser(private val tokens: List<Token>) {
     }
 
 
-
+// ------------ Legacy Code ------------
+//
 //    private fun stmIf(): IfStm {
 //        val start = pos
 //        val startToken = currentToken

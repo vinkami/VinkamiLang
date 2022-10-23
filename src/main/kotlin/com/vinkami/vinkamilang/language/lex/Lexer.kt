@@ -22,6 +22,7 @@ class Lexer(private val text: String, fileName: String) {
                 if (Regex("[\\d.]") matches currentChar!!) {makeNumber()}
                 else if (Regex("[a-zA-Z]") matches currentChar!!) {makeIdentifier()}
                 else if (Regex("[\'\"]") matches currentChar!!) {makeString()}
+                else if (Regex("\$") matches currentChar!!) {makeVariable()}
                 else {
                     val c = currentChar!!
                     advance()
@@ -75,6 +76,18 @@ class Lexer(private val text: String, fileName: String) {
         if (currentChar != null) {
             section += quote
             advance()  // Current char is the quote, need to advance 1 more time
+        }
+
+        return section
+    }
+
+    private fun makeVariable(): String {
+        var section = "$currentChar"
+        advance()
+
+        while (currentChar != null && Regex("[a-zA-Z0-9_]") matches currentChar!!) {
+            section += currentChar
+            advance()
         }
 
         return section

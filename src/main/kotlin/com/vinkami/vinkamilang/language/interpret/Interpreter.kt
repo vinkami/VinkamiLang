@@ -1,28 +1,25 @@
 package com.vinkami.vinkamilang.language.interpret
 
-import com.vinkami.vinkamilang.language.exception.BaseError
-import com.vinkami.vinkamilang.language.exception.NotYourFaultError
-import com.vinkami.vinkamilang.language.exception.SyntaxError
-import com.vinkami.vinkamilang.language.exception.UnknownNodeError
-import com.vinkami.vinkamilang.language.interpret.`object`.NullObj
-import com.vinkami.vinkamilang.language.interpret.`object`.NumberObj
+import com.vinkami.vinkamilang.language.exception.*
+import com.vinkami.vinkamilang.language.interpret.`object`.*
 import com.vinkami.vinkamilang.language.lex.TokenType
 import com.vinkami.vinkamilang.language.parse.node.*
 
 class Interpreter(val node: BaseNode) {
-    fun interpret(): InterpretResult = interpret(node)
+    fun interpret(): InterpretResult = interpret(node, Referables())
 
-    private fun interpret(node: BaseNode): InterpretResult {
+    private fun interpret(node: BaseNode, ref: Referables): InterpretResult {
         node::class.simpleName ?: return InterpretResult(UnknownNodeError(node))
 
         return when (node) {
             is NumberNode -> interpretNumber(node)
-            is BinOpNode -> interpretBinOp(node)
-            is UnaryOpNode -> interpretUnaryOp(node)
-            is BracketNode -> interpretBracket(node)
+            is BinOpNode -> interpretBinOp(node, ref)
+            is UnaryOpNode -> interpretUnaryOp(node, ref)
+            is VarNode -> interpretVar(node, ref)
+            is BracketNode -> interpretBracket(node, ref)
             is NullNode -> InterpretResult(NullObj(node.startPos, node.endPos))
-            is IfNode -> interpretIf(node)
-            is LoopNode -> interpretLoop(node)
+            is IfNode -> interpretIf(node, ref)
+            is LoopNode -> interpretLoop(node, ref)
             else -> InterpretResult(UnknownNodeError(node))
         }
     }
@@ -37,12 +34,12 @@ class Interpreter(val node: BaseNode) {
         }
     }
 
-    private fun interpretBinOp(node: BinOpNode): InterpretResult {
+    private fun interpretBinOp(node: BinOpNode, ref: Referables): InterpretResult {
         val res = InterpretResult()
 
         return try {
-            val left = res(interpret(node.left)).obj
-            val right = res(interpret(node.right)).obj
+            val left = res(interpret(node.left, ref)).obj
+            val right = res(interpret(node.right, ref)).obj
 
 
             when (node.op.type) {
@@ -61,10 +58,10 @@ class Interpreter(val node: BaseNode) {
         }
     }
 
-    private fun interpretUnaryOp(node: UnaryOpNode): InterpretResult {
+    private fun interpretUnaryOp(node: UnaryOpNode, ref: Referables): InterpretResult {
         val res = InterpretResult()
 
-        val innerNode = res(interpret(node.innerNode)).also{res.hasError && return res}.obj
+        val innerNode = res(interpret(node.innerNode, ref)).also{res.hasError && return res}.obj
 
         return when (node.op.type) {
             TokenType.PLUS -> res(+innerNode)
@@ -73,28 +70,36 @@ class Interpreter(val node: BaseNode) {
         }
     }
 
-    private fun interpretBracket(node: BracketNode): InterpretResult {
-        return interpret(node.innerNode)
+    // TODO: untested
+    private fun interpretVar(node: VarNode, ref: Referables): InterpretResult {
+        val name = node.name
+        val value = ref.locate(name) ?: return InterpretResult(NameError("Variable '$name' is not defined", node.startPos, node.endPos))
+        return InterpretResult(value)
     }
 
-    private fun interpretIf(node: IfNode) : InterpretResult {
+    private fun interpretBracket(node: BracketNode, ref: Referables): InterpretResult {
+        return interpret(node.innerNode, ref)
+    }
+
+    private fun interpretIf(node: IfNode, ref: Referables) : InterpretResult {
         val res = InterpretResult(NullObj(node.startPos, node.endPos))
+        val localRef = ref.bornChild()
 
         try {
-            val cond = res(interpret(node.condition)).obj
+            val cond = res(interpret(node.condition, localRef)).obj
             if (cond.boolVal()) {
-                return interpret(node.action)
+                return interpret(node.action, localRef)
             }
 
             for ((elifCondNode, elifActionNode) in node.elif) {
-                val elifCond = res(interpret(elifCondNode)).obj
+                val elifCond = res(interpret(elifCondNode, localRef)).obj
                 if (elifCond.boolVal()) {
-                    return interpret(elifActionNode)
+                    return interpret(elifActionNode, localRef)
                 }
             }
 
             if (node.elseAction != null) {
-                return interpret(node.elseAction)
+                return interpret(node.elseAction, localRef)
             }
 
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
@@ -102,29 +107,31 @@ class Interpreter(val node: BaseNode) {
         return res
     }
 
-    private fun interpretLoop(node: LoopNode) : InterpretResult {
-        val res = InterpretResult(NullObj(node.startPos, node.endPos))
+    // TODO: check it after variables are implemented
+    private fun interpretLoop(node: LoopNode, ref: Referables) : InterpretResult {
+        val res = InterpretResult()
+        val localRef = ref.bornChild()
 
         try {
             var complete = true
             if (node.loopTokenType == TokenType.WHILE) {
-                var cond = res(interpret(node.condition)).obj
+                var cond = res(interpret(node.condition, localRef)).obj
 
                 while (cond.boolVal()) {
-                    res(interpret(node.mainAction))
+                    res(interpret(node.mainAction, localRef))
                     if (res.interrupt != null) {
                         complete = false
                         res.clearInterrupt()
                         break
                     }
-                    cond = res(interpret(node.condition)).obj
+                    cond = res(interpret(node.condition, localRef)).obj
                 }
             } else throw NotYourFaultError("Unknown loop token type: ${node.loopTokenType}", node.startPos, node.endPos)
 
             if (complete) {
-                res(interpret(node.compAction ?: NullNode(node.startPos, node.endPos)))
+                res(interpret(node.compAction ?: NullNode(node.startPos, node.endPos), localRef))
             } else {
-                res(interpret(node.incompAction ?: NullNode(node.startPos, node.endPos)))
+                res(interpret(node.incompAction ?: NullNode(node.startPos, node.endPos), localRef))
             }
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
