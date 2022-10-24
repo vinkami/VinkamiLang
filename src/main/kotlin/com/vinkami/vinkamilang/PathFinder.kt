@@ -6,7 +6,7 @@ import org.bukkit.plugin.java.JavaPlugin
 class PathFinder(var plugin: JavaPlugin) {
     var scripts = mutableListOf<Script>()
     val cmd = Commands(this)
-
+    val logger = plugin.logger
 
     init {
         this.loadScripts()
@@ -22,5 +22,9 @@ class PathFinder(var plugin: JavaPlugin) {
     fun reloadScripts() {
         scripts.clear()
         loadScripts()
+    }
+
+    fun listScripts(): List<String> {
+        return scripts.map { it.name }
     }
 }

@@ -5,7 +5,9 @@ import org.bukkit.plugin.java.JavaPlugin
 class VinkamiLang: JavaPlugin() {
     override fun onEnable() {
         val pf = PathFinder(this)
-        getCommand("vk")!!.setExecutor(pf.cmd)
+        val vk = getCommand("vk")!!
+        vk.setExecutor(pf.cmd)
+        vk.tabCompleter = pf.cmd
 
         saveDefaultConfig()
         logger.info("Hello World!")

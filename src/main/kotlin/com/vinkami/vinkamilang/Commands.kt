@@ -2,14 +2,34 @@ package com.vinkami.vinkamilang
 
 import com.vinkami.vinkamilang.language.Script
 import org.bukkit.command.Command
-import org.bukkit.command.CommandExecutor
+import org.bukkit.command.TabExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
-class Commands(private val pf: PathFinder): CommandExecutor {
+class Commands(private val pf: PathFinder): TabExecutor {
+    override fun onTabComplete(sender: CommandSender, command: Command, label: String, args: Array<out String>): List<String>? {
+        val actualArgs = args.filter { it.isNotEmpty() }
+
+        if (actualArgs.isEmpty()) return listOf("reload", "scripts", "print", "run", "runlex", "runparse", "execute", "help", "?")
+
+        when (actualArgs.size) {
+            1 -> {
+                when (actualArgs[0]) {
+                    "reload", "scripts", "help", "?" -> return null
+                    "print", "run", "runlex", "runparse" -> return pf.listScripts()
+                    "execute" -> return listOf("\"Lorem ipsum\"")
+                }
+            }
+            else -> return null
+        }
+
+        return null
+    }
+
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         if (sender !is Player) { return true }
         if (command.name.lowercase() != "vk") { return true }
+        if (args.isEmpty()) { vkhelp(sender); return true }
 
         when (args[0].lowercase()) {
             "reload" -> vkreload(sender)
@@ -26,6 +46,7 @@ class Commands(private val pf: PathFinder): CommandExecutor {
 
         return true
     }
+
 
     private fun vkhelp(player: CommandSender) {
         val helps = mapOf(
