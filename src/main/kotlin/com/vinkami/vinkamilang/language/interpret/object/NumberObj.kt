@@ -1,5 +1,6 @@
 package com.vinkami.vinkamilang.language.interpret.`object`
 
+import com.vinkami.vinkamilang.language.exception.SyntaxError
 import com.vinkami.vinkamilang.language.lex.Position
 import kotlin.math.pow
 
@@ -41,5 +42,25 @@ class NumberObj(override val value: Float, override val startPos: Position, over
 
     override operator fun unaryMinus(): BaseObject {
         return NumberObj(-value, startPos, endPos)
+    }
+
+    override fun lessEqual(other: BaseObject): BaseObject {
+        if (other !is NumberObj) throw SyntaxError("Can't compare $this and $other", startPos, other.endPos)
+        return BoolObj(value <= other.value, startPos, other.endPos)
+    }
+
+    override fun greaterEqual(other: BaseObject): BaseObject {
+        if (other !is NumberObj) throw SyntaxError("Can't compare $this and $other", startPos, other.endPos)
+        return BoolObj(value >= other.value, startPos, other.endPos)
+    }
+
+    override fun less(other: BaseObject): BaseObject {
+        if (other !is NumberObj) throw SyntaxError("Can't compare $this and $other", startPos, other.endPos)
+        return BoolObj(value < other.value, startPos, other.endPos)
+    }
+
+    override fun greater(other: BaseObject): BaseObject {
+        if (other !is NumberObj) throw SyntaxError("Can't compare $this and $other", startPos, other.endPos)
+        return BoolObj(value > other.value, startPos, other.endPos)
     }
 }

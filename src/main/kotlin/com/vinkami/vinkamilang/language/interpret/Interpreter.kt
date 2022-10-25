@@ -5,8 +5,8 @@ import com.vinkami.vinkamilang.language.interpret.`object`.*
 import com.vinkami.vinkamilang.language.lex.TokenType
 import com.vinkami.vinkamilang.language.parse.node.*
 
-class Interpreter(val node: BaseNode) {
-    fun interpret(): InterpretResult = interpret(node, Referables())
+class Interpreter(private val node: BaseNode, private val ref: Referables = Referables()) {
+    fun interpret(): InterpretResult = interpret(node, ref)
 
     private fun interpret(node: BaseNode, ref: Referables): InterpretResult {
         node::class.simpleName ?: return InterpretResult(UnknownNodeError(node))
@@ -15,7 +15,8 @@ class Interpreter(val node: BaseNode) {
             is NumberNode -> interpretNumber(node)
             is BinOpNode -> interpretBinOp(node, ref)
             is UnaryOpNode -> interpretUnaryOp(node, ref)
-            is VarNode -> interpretVar(node, ref)
+            is IdenNode -> interpretIden(node, ref)  // retrieve value from ref only
+            is AssignNode -> interpretAssign(node, ref)
             is BracketNode -> interpretBracket(node, ref)
             is NullNode -> InterpretResult(NullObj(node.startPos, node.endPos))
             is IfNode -> interpretIf(node, ref)
@@ -25,7 +26,7 @@ class Interpreter(val node: BaseNode) {
     }
 
     private fun interpretNumber(node: NumberNode): InterpretResult {
-        val valueString = node.tok.value
+        val valueString = node.value
         return try {
             val value = valueString.toFloat()
             InterpretResult(NumberObj(value, node.startPos, node.endPos))
@@ -49,6 +50,14 @@ class Interpreter(val node: BaseNode) {
                 TokenType.DIVIDE -> res(left / right)
                 TokenType.MODULO -> res(left % right)
                 TokenType.POWER -> res(left.power(right))
+
+                TokenType.EQUAL -> res(left.equal(right))
+                TokenType.NOT_EQUAL -> res(left.notEqual(right))
+                TokenType.LESS_EQUAL -> res(left.lessEqual(right))
+                TokenType.GREATER_EQUAL -> res(left.greaterEqual(right))
+                TokenType.LESS -> res(left.less(right))
+                TokenType.GREATER -> res(left.greater(right))
+
                 else -> throw UnknownNodeError(node)
             }
         }  catch (e: BaseError) {
@@ -70,11 +79,25 @@ class Interpreter(val node: BaseNode) {
         }
     }
 
-    // TODO: untested
-    private fun interpretVar(node: VarNode, ref: Referables): InterpretResult {
-        val name = node.name
-        val value = ref.locate(name) ?: return InterpretResult(NameError("Variable '$name' is not defined", node.startPos, node.endPos))
-        return InterpretResult(value)
+    private fun interpretIden(node: IdenNode, ref: Referables): InterpretResult {
+        val res = InterpretResult()
+
+        try {
+            res(ref.locate(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos))
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+
+        return res
+    }
+
+    private fun interpretAssign(node: AssignNode, ref: Referables): InterpretResult {
+        val res = InterpretResult()
+
+        return try {
+            val value = res(interpret(node.value, ref)).obj
+
+            ref.assign(node.iden.name, value)
+            res(value)
+        } catch (e: BaseError) { res(e) } catch (e: UninitializedPropertyAccessException) { res }
     }
 
     private fun interpretBracket(node: BracketNode, ref: Referables): InterpretResult {

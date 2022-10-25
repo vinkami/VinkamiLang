@@ -6,7 +6,7 @@ class Token {
     var startPos: Position
     var endPos: Position
 
-    constructor(section: String, startPos: Position, endPos: Position){
+    constructor(section: String, startPos: Position, endPos: Position) {
         val pair = determineTokenPair(section)
 
         this.type = pair.first
@@ -15,7 +15,7 @@ class Token {
         this.endPos = endPos
     }
 
-    constructor(TT: TokenType, value: String, startPos: Position, endPos: Position){
+    constructor(TT: TokenType, value: String, startPos: Position, endPos: Position) {
         this.type = TT
         this.value = value
         this.startPos = startPos
@@ -42,6 +42,7 @@ class Token {
             "," -> Pair(TokenType.COMMA, ",")
             "." -> Pair(TokenType.DOT, ".")
             ":" -> Pair(TokenType.COLON, ":")
+            ";" -> Pair(TokenType.SEMICOLON, ";")
 
             // Arithmetic operator
             "+" -> Pair(TokenType.PLUS, "+")
@@ -61,8 +62,8 @@ class Token {
 
             // Definitive operator
             "=" -> Pair(TokenType.ASSIGN, "=")
-            "++" -> Pair(TokenType.INCREMENT, "++")  // Combined from 2 PLUS
-            "--" -> Pair(TokenType.DECREMENT, "--")  // Combined from 2 MINUS
+//            "++" -> Pair(TokenType.INCREMENT, "++")  // Combined from 2 PLUS
+//            "--" -> Pair(TokenType.DECREMENT, "--")  // Combined from 2 MINUS
             "+=" -> Pair(TokenType.PLUS_ASSIGN, "+=")  // Combined from PLUS and ASSIGN
             "-=" -> Pair(TokenType.MINUS_ASSIGN, "-=")  // Combined from MINUS and ASSIGN
             "*=" -> Pair(TokenType.MULTIPLY_ASSIGN, "*=")  // Combined from MULTIPLY and ASSIGN
@@ -94,6 +95,7 @@ class Token {
 
             "EOF" -> Pair(TokenType.EOF, "EOF")
 
+            // Non-fixed-value
             else -> {
                 if (Regex("^[0-9.]+$").matches(section)) {
                     Pair(TokenType.NUMBER, section)
@@ -101,8 +103,6 @@ class Token {
                     Pair(TokenType.IDENTIFIER, section)
                 } else if (Regex("^(?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')\$").matches(section)) {  // see https://stackoverflow.com/questions/481282/how-can-i-match-double-quoted-strings-with-escaped-double-quote-characters
                     Pair(TokenType.STRING, section.substring(1, section.length - 1))
-                } else if (Regex("^\$[a-zA-Z0-9_]*$").matches(section)) {
-                    Pair(TokenType.VARIABLE, section.substring(1))
                 } else if (Regex("^ +$").matches(section)) {
                     Pair(TokenType.SPACE, section)
                 } else if (Regex("^[\r\n]+$").matches(section)) {

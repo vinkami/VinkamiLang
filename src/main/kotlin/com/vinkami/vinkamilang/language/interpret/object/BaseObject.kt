@@ -18,4 +18,11 @@ interface BaseObject {
 
     operator fun unaryPlus(): BaseObject = throw SyntaxError("Can't apply unary plus to $this", startPos, endPos)
     operator fun unaryMinus(): BaseObject = throw SyntaxError("Can't apply unary minus to $this", startPos, endPos)
+
+    fun equal(other: BaseObject): BaseObject = BoolObj(value == other.value, startPos, other.endPos)
+    fun notEqual(other: BaseObject): BaseObject = BoolObj(value != other.value, startPos, other.endPos)
+    fun lessEqual(other: BaseObject): BaseObject = throw SyntaxError("Can't compare $this and $other", startPos, other.endPos)
+    fun greaterEqual(other: BaseObject): BaseObject = throw SyntaxError("Can't compare $this and $other", startPos, other.endPos)
+    fun less(other: BaseObject): BaseObject = throw SyntaxError("Can't compare $this and $other", startPos, other.endPos)
+    fun greater(other: BaseObject): BaseObject = throw SyntaxError("Can't compare $this and $other", startPos, other.endPos)
 }

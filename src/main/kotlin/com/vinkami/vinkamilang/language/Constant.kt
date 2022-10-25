@@ -18,13 +18,13 @@ internal object Constant {
         TokenType.GREATER, TokenType.GREATER_EQUAL,
     )
 
-//    val difinitiveOp: List<TokenType> = listOf(
-//        TokenType.ASSIGN,
+    val difinitiveOp: List<TokenType> = listOf(
+        TokenType.ASSIGN,
 //        TokenType.INCREMENT, TokenType.DECREMENT,
-//        TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN,
-//        TokenType.MULTIPLY_ASSIGN, TokenType.DIVIDE_ASSIGN,
-//        TokenType.MODULO_ASSIGN, TokenType.POWER_ASSIGN,
-//    )
+        TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN,
+        TokenType.MULTIPLY_ASSIGN, TokenType.DIVIDE_ASSIGN,
+        TokenType.MODULO_ASSIGN, TokenType.POWER_ASSIGN,
+    )
 
 //    val operator: List<TokenType> = arithmeticOp + comparitiveOp + difinitiveOp
 
@@ -59,6 +59,7 @@ internal object Constant {
 
         Pair(TokenType.MODULO, TokenType.ASSIGN) to Pair(TokenType.MODULO_ASSIGN) { _, _ -> "%=" },
 
+        Pair(TokenType.ASSIGN, TokenType.ASSIGN) to Pair(TokenType.EQUAL) {_, _ -> "==" },
         Pair(TokenType.LESS, TokenType.ASSIGN) to Pair(TokenType.LESS_EQUAL) { _, _ -> "<=" },
         Pair(TokenType.GREATER, TokenType.ASSIGN) to Pair(TokenType.GREATER_EQUAL) { _, _ -> ">=" },
         Pair(TokenType.NOT, TokenType.ASSIGN) to Pair(TokenType.NOT_EQUAL) { _, _ -> "!=" },
