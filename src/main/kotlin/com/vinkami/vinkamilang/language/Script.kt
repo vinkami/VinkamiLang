@@ -3,6 +3,7 @@ package com.vinkami.vinkamilang.language
 import com.vinkami.vinkamilang.PathFinder
 import com.vinkami.vinkamilang.language.exception.BaseError
 import com.vinkami.vinkamilang.language.interpret.Interpreter
+import com.vinkami.vinkamilang.language.interpret.Referables
 import com.vinkami.vinkamilang.language.interpret.`object`.BaseObject
 import com.vinkami.vinkamilang.language.lex.Lexer
 import com.vinkami.vinkamilang.language.lex.Token
@@ -37,12 +38,12 @@ class Script {
         return "<Script $name>"
     }
 
-    fun run(): String {
+    fun run(ref: Referables = Referables()): String {
         lex()
         parse()
         if (hasError) return error.toString()
         if (!::node.isInitialized) return "InternalError: No node found"
-        interpret()
+        interpret(ref)
         if (hasError) return error.toString()
         return value.toString()
     }
@@ -57,8 +58,8 @@ class Script {
         if (result.hasNode) this.node = result.node
     }
 
-    fun interpret() = apply {
-        val result = Interpreter(node).interpret()
+    fun interpret(ref: Referables = Referables()) = apply {
+        val result = Interpreter(node, ref).interpret()
         if (result.hasError) this.error = result.error
         if (result.hasObject) this.value = result.obj
     }

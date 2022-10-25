@@ -1,12 +1,15 @@
 package com.vinkami.vinkamilang
 
 import com.vinkami.vinkamilang.language.Script
+import com.vinkami.vinkamilang.language.interpret.Referables
 import org.bukkit.command.Command
 import org.bukkit.command.TabExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
 class Commands(private val pf: PathFinder): TabExecutor {
+    val vkexecuteRef = Referables()
+
     override fun onTabComplete(sender: CommandSender, command: Command, label: String, args: Array<out String>): List<String>? {
         val actualArgs = args.filter { it.isNotEmpty() }
 
@@ -128,6 +131,6 @@ class Commands(private val pf: PathFinder): TabExecutor {
     private fun vkexecute(player: CommandSender, codes: List<String>) {
         val code = codes.joinToString(" ")
         val script = Script("<stdin>", code)
-        player.sendMessage(script.run())
+        player.sendMessage(script.run(vkexecuteRef))
     }
 }
