@@ -26,7 +26,7 @@ internal object Constant {
         TokenType.MODULO_ASSIGN, TokenType.POWER_ASSIGN,
     )
 
-//    val operator: List<TokenType> = arithmeticOp + comparitiveOp + difinitiveOp
+    val operators: List<TokenType> = arithmeticOp + comparitiveOp + difinitiveOp
 
     val bracket: Map<TokenType, TokenType> = mapOf(
         TokenType.L_PARAN to TokenType.R_PARAN,
@@ -37,12 +37,16 @@ internal object Constant {
     val bindingPower: Map<TokenType, Pair<Int, Int>> = mapOf(
         TokenType.PLUS to Pair(4, 5), TokenType.MINUS to Pair(4, 5),
         TokenType.MULTIPLY to Pair(6, 7), TokenType.DIVIDE to Pair(6, 7),
-        TokenType.MODULO to Pair(8, 9),
-        TokenType.POWER to Pair(10, 11),
+        TokenType.MODULO to Pair(8, 9), TokenType.POWER to Pair(10, 11),
 
         TokenType.EQUAL to Pair(2, 3), TokenType.NOT_EQUAL to Pair(2, 3),
         TokenType.LESS to Pair(2, 3), TokenType.LESS_EQUAL to Pair(2, 3),
         TokenType.GREATER to Pair(2, 3), TokenType.GREATER_EQUAL to Pair(2, 3),
+
+        TokenType.ASSIGN to Pair(100, 1),
+        TokenType.PLUS_ASSIGN to Pair(100, 1), TokenType.MINUS_ASSIGN to Pair(100, 1),
+        TokenType.MULTIPLY_ASSIGN to Pair(100, 1), TokenType.DIVIDE_ASSIGN to Pair(100, 1),
+        TokenType.MODULO_ASSIGN to Pair(100, 1), TokenType.POWER_ASSIGN to Pair(100, 1),
     )
 
     val conbinableTokens: Map<Pair<TokenType, TokenType>, Pair<TokenType, (Token, Token) -> String>> = mapOf(
