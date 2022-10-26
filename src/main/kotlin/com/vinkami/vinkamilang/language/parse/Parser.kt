@@ -45,26 +45,23 @@ class Parser(private val tokens: List<Token>) {
         try {
             skipSpace()
             while (true) {
-                val currentResult = parseOnce()
-                if (currentResult.hasError) return currentResult
-                if (currentToken.type == TokenType.EOF) break
+                procedures += res(parseOnce()).node  // throws UPAE if currentResult has error
 
-                procedures += currentResult.node
+                if (currentToken.type == TokenType.EOF) break
                 ass()
             }
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
         val endPos = currentToken.endPos
 
         if (procedures.size == 1 || procedures.size == 2) return res(procedures[0])  // 1: Only NullNode from EOF; 2: Only one procedure
-        return res(ProcedralNode(procedures, startPos, endPos))
+        return res(ProcedralNode(procedures.dropLast(1), startPos, endPos))  // TODO: Final procedure seems to be dropped
     }
 
     private fun parseOnce(): ParseResult {
         return when (currentToken.type) {
-            TokenType.NUMBER -> parseBinOp(0)
+            TokenType.NUMBER, TokenType.IDENTIFIER -> parseBinOp(0)
             TokenType.STRING -> ParseResult(StringNode(currentToken))
             TokenType.PLUS, TokenType.MINUS -> parseUnaryOp()
-            TokenType.IDENTIFIER -> parseIden()
             TokenType.VAR -> parseAssign()
             in Constant.bracket.keys -> parseBracket()
             TokenType.IF -> parseIf()
@@ -96,7 +93,7 @@ class Parser(private val tokens: List<Token>) {
             val lhs: BaseNode = when (currentToken.type) {
                 TokenType.L_PARAN -> res(parseBracket()).node
                 TokenType.NUMBER -> NumberNode(currentToken)
-                TokenType.IDENTIFIER -> IdenNode(currentToken)
+                TokenType.IDENTIFIER -> res(parseIden()).node
                 else -> throw SyntaxError("Unexpected token ${currentToken.type}", currentToken.startPos, currentToken.endPos)
             }
 
@@ -112,10 +109,10 @@ class Parser(private val tokens: List<Token>) {
 
         while (true) {
             val op = nextNonSpaceToken
-            if (!(Constant.arithmeticOp + Constant.comparitiveOp).contains(op.type)) break
+            if (op.type !in Constant.operators) break
 
             val (leftBP, rightBP) = Constant.bindingPower[op.type]!!
-            if (leftBP < minBP) {break}
+            if (leftBP < minBP) break
             ass()
 
             val rhs = res(parseBinOp(rightBP)).node
@@ -143,7 +140,7 @@ class Parser(private val tokens: List<Token>) {
 
         try {
             val node = IdenNode(currentToken)
-            res(processBinOp(0, res, node))
+            res(node)
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
         return res
@@ -163,6 +160,7 @@ class Parser(private val tokens: List<Token>) {
             val assignToken = currentToken
             ass()
 
+            if (currentToken.type in listOf(TokenType.EOF, TokenType.LINEBREAK)) throw SyntaxError("Unexpected end of line", currentToken.startPos, currentToken.endPos)
             val value = res(parseOnce()).node
             res(AssignNode(iden, assignToken, value, startPos))
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
