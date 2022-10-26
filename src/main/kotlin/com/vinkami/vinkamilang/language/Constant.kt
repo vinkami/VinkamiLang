@@ -4,6 +4,7 @@ import com.vinkami.vinkamilang.language.lex.Token
 import com.vinkami.vinkamilang.language.lex.TokenType
 
 
+@Suppress("MemberVisibilityCanBePrivate")
 internal object Constant {
     val arithmeticOp: List<TokenType> = listOf(
         TokenType.PLUS, TokenType.MINUS,

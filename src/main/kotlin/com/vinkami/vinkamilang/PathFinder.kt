@@ -7,6 +7,7 @@ class PathFinder(var plugin: JavaPlugin) {
     var scripts = mutableListOf<Script>()
     val cmd = Commands(this)
     val cmdtc = CommandTabCompleter(this)
+    @Suppress("unused")
     val logger = plugin.logger
 
     init {

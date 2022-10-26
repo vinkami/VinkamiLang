@@ -2,6 +2,7 @@ package com.vinkami.vinkamilang
 
 import org.bukkit.plugin.java.JavaPlugin
 
+@Suppress("unused")
 class VinkamiLang: JavaPlugin() {
     override fun onEnable() {
         val pf = PathFinder(this)
