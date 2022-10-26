@@ -3,48 +3,39 @@ package com.vinkami.vinkamilang
 import com.vinkami.vinkamilang.language.Script
 import com.vinkami.vinkamilang.language.interpret.Referables
 import org.bukkit.command.Command
-import org.bukkit.command.TabExecutor
+import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
-class Commands(private val pf: PathFinder): TabExecutor {
-    val vkexecuteRef = Referables()
-
-    override fun onTabComplete(sender: CommandSender, command: Command, label: String, args: Array<out String>): List<String>? {
-        val actualArgs = args.filter { it.isNotEmpty() }
-
-        if (actualArgs.isEmpty()) return listOf("reload", "scripts", "print", "run", "runlex", "runparse", "execute", "help", "?")
-
-        when (actualArgs.size) {
-            1 -> {
-                when (actualArgs[0]) {
-                    "reload", "scripts", "help", "?" -> return null
-                    "print", "run", "runlex", "runparse" -> return pf.listScripts()
-                    "execute" -> return listOf("\"Lorem ipsum\"")
-                }
-            }
-            else -> return null
-        }
-
-        return null
-    }
+class Commands(private val pf: PathFinder): CommandExecutor {
+    private val vkexecuteRef = Referables()
+    private val commandList = mapOf(
+        // name - (usage - description) - {method}
+        "reload" to Triple("/vk reload", "Reload the scripts") {sender: CommandSender, _: Array<out String> -> vkreload(sender)},
+        "scripts" to Triple("/vk scripts", "List the scripts") {sender: CommandSender, _: Array<out String> -> vkscripts(sender)},
+        "print" to Triple("/vk print <script>", "Print the script") {sender: CommandSender, args: Array<out String> -> vkprint(sender, args.getOrElse(1) { "main" })},
+        "run" to Triple("/vk run <script>", "Run the script") {sender: CommandSender, args: Array<out String> -> vkrun(sender, args.getOrElse(1) { "main" })},
+        "runlex" to Triple("/vk runlex <script>", "Run the script with lexer only") {sender: CommandSender, args: Array<out String> -> vkrunlex(sender, args.getOrElse(1) { "main" })},
+        "runparse" to Triple("/vk runparse <script>", "Run the script with lexer and parser only") {sender: CommandSender, args: Array<out String> -> vkrunparse(sender, args.getOrElse(1) { "main" })},
+        "execute" to Triple("/vk execute <code>", "Execute the code in real time") {sender: CommandSender, args: Array<out String> -> vkexecute(sender, args.drop(1))},
+    )
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         if (sender !is Player) { return true }
         if (command.name.lowercase() != "vk") { return true }
         if (args.isEmpty()) { vkhelp(sender); return true }
 
-        when (args[0].lowercase()) {
-            "reload" -> vkreload(sender)
-            "scripts" -> vkscripts(sender)
-            "print" -> vkprint(sender, args.getOrElse(1) { "main" })
-            "run" -> vkrun(sender, args.getOrElse(1) { "main" })
-            "runlex" -> vkrunlex(sender, args.getOrElse(1) { "main" })
-            "runparse" -> vkrunparse(sender, args.getOrElse(1) { "main" })
-            "execute" -> vkexecute(sender, args.drop(1))
-
-            "help", "?" -> vkhelp(sender)
-            else -> vkhelp(sender)
+        else {
+            val actualArgs = args.filter { it.isNotEmpty() }
+            val cmd = commandList[actualArgs[0]]
+            if (actualArgs[0] in listOf("help", "?")) {
+                vkhelp(sender)
+            } else if (cmd == null) {
+                sender.sendMessage("Unknown command: ${actualArgs[0]}")
+                vkhelp(sender)
+            } else {
+                cmd.third(sender, actualArgs.toTypedArray())
+            }
         }
 
         return true
@@ -52,18 +43,10 @@ class Commands(private val pf: PathFinder): TabExecutor {
 
 
     private fun vkhelp(player: CommandSender) {
-        val helps = mapOf(
-            "/vk reload" to "Reload the scripts",
-            "/vk scripts" to "List the scripts",
-            "/vk print <script>" to "Print the script",
-            "/vk run <script>" to "Run the script",
-            "/vk runlex <script>" to "Run the script with lexer only",
-            "/vk runparse <script>" to "Run the script with lexer and parser only",
-            "/vk execute <code>" to "Execute the code in real time",
-        )
-
-        for ((k, v) in helps) {
-            player.sendMessage("$k - $v")
+        player.sendMessage("VinkamiLang commands:")
+        for ((_, trio) in commandList) {
+            val (usage, desc, _) = trio
+            player.sendMessage("$usage - $desc")
         }
     }
 

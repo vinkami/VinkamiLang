@@ -7,7 +7,7 @@ class VinkamiLang: JavaPlugin() {
         val pf = PathFinder(this)
         val vk = getCommand("vk")!!
         vk.setExecutor(pf.cmd)
-        vk.tabCompleter = pf.cmd
+        vk.tabCompleter = pf.cmdtc
 
         saveDefaultConfig()
         logger.info("Hello World!")

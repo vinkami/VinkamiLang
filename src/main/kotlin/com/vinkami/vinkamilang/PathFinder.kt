@@ -6,6 +6,7 @@ import org.bukkit.plugin.java.JavaPlugin
 class PathFinder(var plugin: JavaPlugin) {
     var scripts = mutableListOf<Script>()
     val cmd = Commands(this)
+    val cmdtc = CommandTabCompleter(this)
     val logger = plugin.logger
 
     init {
