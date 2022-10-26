@@ -1,5 +1,6 @@
 package com.vinkami.vinkamilang.language.interpret
 
+import com.vinkami.vinkamilang.language.Constant
 import com.vinkami.vinkamilang.language.exception.*
 import com.vinkami.vinkamilang.language.interpret.`object`.*
 import com.vinkami.vinkamilang.language.lex.TokenType
@@ -13,6 +14,7 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
 
         return when (node) {
             is NumberNode -> interpretNumber(node)
+            is StringNode -> InterpretResult(StringObj(node.value, node.startPos, node.endPos))
             is BinOpNode -> interpretBinOp(node, ref)
             is UnaryOpNode -> interpretUnaryOp(node, ref)
             is IdenNode -> interpretIden(node, ref)  // retrieve value from ref only
@@ -21,6 +23,7 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
             is NullNode -> InterpretResult(NullObj(node.startPos, node.endPos))
             is IfNode -> interpretIf(node, ref)
             is LoopNode -> interpretLoop(node, ref)
+            is ProcedralNode -> interpretProcedural(node, ref)
             else -> InterpretResult(UnknownNodeError(node))
         }
     }
@@ -38,33 +41,52 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
     private fun interpretBinOp(node: BinOpNode, ref: Referables): InterpretResult {
         val res = InterpretResult()
 
-        return try {
-            val left = res(interpret(node.left, ref)).obj
-            val right = res(interpret(node.right, ref)).obj
+        try {
+            if (node.op.type in Constant.difinitiveOp) {
+                // Variable assignment
+                if (node.left !is IdenNode) return res(SyntaxError("Invalid assignment", node.startPos, node.endPos))
+                val name = node.left.name
+                val value = interpret(node.right, ref).obj
+                val ogValue = ref.get(name) ?: throw NameError("Unknown variable $name", node.left.startPos, node.left.endPos)
 
+                when (node.op.type) {
+                    TokenType.ASSIGN -> ref.set(name, value)
+                    TokenType.PLUS_ASSIGN -> ref.set(name, ogValue.plus(value))
+                    TokenType.MINUS_ASSIGN -> ref.set(name, ogValue.minus(value))
+                    TokenType.MULTIPLY_ASSIGN -> ref.set(name, ogValue.times(value))
+                    TokenType.DIVIDE_ASSIGN -> ref.set(name, ogValue.divide(value))
+                    TokenType.MODULO_ASSIGN -> ref.set(name, ogValue.mod(value))
+                    TokenType.POWER_ASSIGN -> ref.set(name, ogValue.power(value))
+                    else -> throw NotYourFaultError("Invalid assignment operator ${node.op.type}", node.op.startPos, node.op.endPos)  // No other TT are allowed from parser
+                }
+                res(NullObj(node.startPos, node.endPos))
 
-            when (node.op.type) {
-                TokenType.PLUS -> res(left + right)
-                TokenType.MINUS -> res(left - right)
-                TokenType.MULTIPLY -> res(left * right)
-                TokenType.DIVIDE -> res(left / right)
-                TokenType.MODULO -> res(left % right)
-                TokenType.POWER -> res(left.power(right))
+            } else {
+                // Normal caluclation
+                val left = res(interpret(node.left, ref)).obj
+                val right = res(interpret(node.right, ref)).obj
 
-                TokenType.EQUAL -> res(left.equal(right))
-                TokenType.NOT_EQUAL -> res(left.notEqual(right))
-                TokenType.LESS_EQUAL -> res(left.lessEqual(right))
-                TokenType.GREATER_EQUAL -> res(left.greaterEqual(right))
-                TokenType.LESS -> res(left.less(right))
-                TokenType.GREATER -> res(left.greater(right))
+                when (node.op.type) {
+                    TokenType.PLUS -> res(left.plus(right))
+                    TokenType.MINUS -> res(left.minus(right))
+                    TokenType.MULTIPLY -> res(left.times(right))
+                    TokenType.DIVIDE -> res(left.divide(right))
+                    TokenType.MODULO -> res(left.mod(right))
+                    TokenType.POWER -> res(left.power(right))
 
-                else -> throw UnknownNodeError(node)
+                    TokenType.EQUAL -> res(left.equal(right))
+                    TokenType.NOT_EQUAL -> res(left.notEqual(right))
+                    TokenType.LESS_EQUAL -> res(left.lessEqual(right))
+                    TokenType.GREATER_EQUAL -> res(left.greaterEqual(right))
+                    TokenType.LESS -> res(left.less(right))
+                    TokenType.GREATER -> res(left.greater(right))
+
+                    else -> throw UnknownNodeError(node)
+                }
             }
-        }  catch (e: BaseError) {
-            res(e)
-        } catch (e: UninitializedPropertyAccessException) {
-            res
-        }
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+
+        return res
     }
 
     private fun interpretUnaryOp(node: UnaryOpNode, ref: Referables): InterpretResult {
@@ -73,8 +95,8 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
         val innerNode = res(interpret(node.innerNode, ref)).also{res.hasError && return res}.obj
 
         return when (node.op.type) {
-            TokenType.PLUS -> res(+innerNode)
-            TokenType.MINUS -> res(-innerNode)
+            TokenType.PLUS -> res(innerNode.unaryPlus())
+            TokenType.MINUS -> res(innerNode.unaryMinus())
             else -> res(UnknownNodeError(node))
         }
     }
@@ -83,7 +105,7 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
         val res = InterpretResult()
 
         try {
-            res(ref.locate(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos))
+            res(ref.get(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos))
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
         return res
@@ -95,8 +117,8 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
         return try {
             val value = res(interpret(node.value, ref)).obj
 
-            ref.assign(node.iden.name, value)
-            res(value)
+            ref.set(node.iden.name, value)
+            res(NullObj(node.startPos, node.endPos))
         } catch (e: BaseError) { res(e) } catch (e: UninitializedPropertyAccessException) { res }
     }
 
@@ -159,5 +181,24 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
         return res
+    }
+
+    private fun interpretProcedural(node: ProcedralNode, ref: Referables): InterpretResult {
+        val res = InterpretResult()
+        val localRef = ref.bornChild()
+        var finalObj: BaseObject = NullObj(node.startPos, node.endPos)
+
+        try {
+            for (procedure in node.procedures) {
+                finalObj = res(interpret(procedure, localRef)).obj  // throw UPAE if res has error
+
+                if (res.interrupt != null) {
+                    res.clearInterrupt()
+                    break
+                }
+            }
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+
+        return res(finalObj)
     }
 }
