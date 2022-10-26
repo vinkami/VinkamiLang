@@ -5,13 +5,13 @@ import com.vinkami.vinkamilang.language.interpret.`object`.BaseObject
 data class Referables(val variables: MutableMap<String, BaseObject> = mutableMapOf()) {
     var parent: Referables? = null
 
-    fun locate(name: String): BaseObject? {
-        return variables[name] ?: parent?.locate(name)
+    fun get(name: String): BaseObject? {
+        return variables[name] ?: parent?.get(name)
     }
 
-    fun assign(name: String, value: BaseObject) {
-        if (parent?.locate(name) != null) {
-            parent?.assign(name, value)
+    fun set(name: String, value: BaseObject) {
+        if (parent?.get(name) != null) {
+            parent?.set(name, value)
         } else {
             variables[name] = value
         }
