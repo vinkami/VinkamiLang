@@ -17,7 +17,7 @@ class CommandTabCompleter(private val pf: PathFinder): TabCompleter {
     }
 
     private fun subargOf(args: List<String>) = when (args[0]) {
-        "print", "run", "runlex", "runparse" -> pf.listScripts().filter { it.startsWith(args[1]) }
+        "print", "run", "runlex", "runparse" -> pf.listScripts().filter { args.size == 1 || it.startsWith(args[1]) }
         "execute" -> listOf("\"Lorem ipsum\"")
         else -> null
     }
