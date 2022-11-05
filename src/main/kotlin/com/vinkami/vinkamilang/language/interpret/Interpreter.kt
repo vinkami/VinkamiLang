@@ -126,7 +126,7 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
         return interpret(node.innerNode, ref)
     }
 
-    private fun interpretIf(node: IfNode, ref: Referables) : InterpretResult {
+    private fun interpretIf(node: IfNode, ref: Referables): InterpretResult {
         val res = InterpretResult(NullObj(node.startPos, node.endPos))
         val localRef = ref.bornChild()
 
@@ -152,35 +152,40 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
         return res
     }
 
-    // TODO: check it after variables are implemented
-    private fun interpretLoop(node: LoopNode, ref: Referables) : InterpretResult {
+    // TODO: Add for loop
+    private fun interpretLoop(node: LoopNode, globalRef: Referables): InterpretResult {
         val res = InterpretResult()
-        val localRef = ref.bornChild()
+        val ref = globalRef.bornChild()
+        var finalObj: BaseObject = NullObj(node.startPos, node.endPos)
 
         try {
             var complete = true
             if (node.loopTokenType == TokenType.WHILE) {
-                var cond = res(interpret(node.condition, localRef)).obj
+                var cond = res(interpret(node.condition, ref)).obj
 
                 while (cond.boolVal()) {
-                    res(interpret(node.mainAction, localRef))
+                    val innerRes = res(interpret(node.mainAction, ref))
+                    if (innerRes.hasObject) finalObj = innerRes.obj
                     if (res.interrupt != null) {
                         complete = false
                         res.clearInterrupt()
                         break
                     }
-                    cond = res(interpret(node.condition, localRef)).obj
+                    cond = res(interpret(node.condition, ref)).obj
                 }
+
             } else throw NotYourFaultError("Unknown loop token type: ${node.loopTokenType}", node.startPos, node.endPos)
 
             if (complete) {
-                res(interpret(node.compAction ?: NullNode(node.startPos, node.endPos), localRef))
+                val compRes = res(interpret(node.compAction ?: NullNode(node.startPos, node.endPos), ref))
+                if (compRes.hasObject) finalObj = compRes.obj
             } else {
-                res(interpret(node.incompAction ?: NullNode(node.startPos, node.endPos), localRef))
+                val incompRes = res(interpret(node.incompAction ?: NullNode(node.startPos, node.endPos), ref))
+                if (incompRes.hasObject) finalObj = incompRes.obj
             }
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
-        return res
+        return res(finalObj)
     }
 
     private fun interpretProcedural(node: ProcedralNode, ref: Referables): InterpretResult {
