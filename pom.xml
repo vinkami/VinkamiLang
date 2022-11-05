@@ -6,7 +6,7 @@
 
     <groupId>com.vinkami</groupId>
     <artifactId>VinkamiLang</artifactId>
-    <version>0.1.0-Alpha</version>
+    <version>0.2.0-Alpha</version>
     <packaging>jar</packaging>
 
     <name>VinkamiLang</name>
@@ -15,7 +15,7 @@
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <kotlin.version>1.6.21</kotlin.version>
+        <kotlin.version>1.7.20</kotlin.version>
     </properties>
 
     <build>
