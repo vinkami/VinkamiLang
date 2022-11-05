@@ -12,7 +12,7 @@ class Parser(private val tokens: List<Token>) {
     private val currentToken: Token
         get() = tokens[pos]
     private val nextNonSpaceToken: Token
-        get() = tokens.subList(pos + 1, tokens.size).firstOrNull { it.type != TokenType.SPACE } ?: tokens.last()
+        get() = tokens.subList(pos + 1, tokens.size).firstOrNull { it.type !in listOf(TokenType.SPACE, TokenType.LINEBREAK) } ?: tokens.last()
 
     init {advance()}
 
@@ -54,7 +54,7 @@ class Parser(private val tokens: List<Token>) {
         val endPos = currentToken.endPos
 
         if (procedures.size == 1 || procedures.size == 2) return res(procedures[0])  // 1: Only NullNode from EOF; 2: Only one procedure
-        return res(ProcedralNode(procedures.dropLast(1), startPos, endPos))  // TODO: Final procedure seems to be dropped
+        return res(ProcedralNode(procedures.dropLast(1), startPos, endPos))
     }
 
     private fun parseOnce(): ParseResult {
@@ -254,10 +254,10 @@ class Parser(private val tokens: List<Token>) {
             val mainAction = res(parseBracket()).node
             var endPos = currentToken.endPos
 
-            ass()
             var compAction: BaseNode? = null
             var incompAction: BaseNode? = null
-            while (currentToken.type in Constant.loopCompleteTT) {
+            while (nextNonSpaceToken.type in Constant.loopCompleteTT) {
+                ass()
                 val tt = currentToken.type
                 ass()
                 when (tt) {
@@ -266,7 +266,6 @@ class Parser(private val tokens: List<Token>) {
                     else -> throw NotYourFaultError("Illegal loop complete type $tt", currentToken.startPos, currentToken.endPos)
                 }
                 endPos = currentToken.endPos
-                ass()
             }
 
             return res(LoopNode(loopTT, condition, mainAction, compAction, incompAction, startPos, endPos))
