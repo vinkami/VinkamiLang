@@ -1,5 +1,7 @@
 package com.vinkami.vinkamilang.language.lex
 
+import com.vinkami.vinkamilang.language.Constant
+
 class Token {
     var type: TokenType
     var value: String
@@ -31,86 +33,16 @@ class Token {
     }
 
     private fun determineTokenPair(section: String): Pair<TokenType, String> {
+        Constant.fixValuedTokenPair[section]?.let { return it to section }
+
+        operator fun Regex.contains(other: CharSequence): Boolean = this.matches(other)  // provides `CharSequence in Regex` syntax, which can be used in when statement below
         return when (section) {
-            // Key char
-            "(" -> Pair(TokenType.L_PARAN, "(")
-            ")" -> Pair(TokenType.R_PARAN, ")")
-            "[" -> Pair(TokenType.L_BRAC, "[")
-            "]" -> Pair(TokenType.R_BRAC, "]")
-            "{" -> Pair(TokenType.L_BRACE, "{")
-            "}" -> Pair(TokenType.R_BRACE, "}")
-            "," -> Pair(TokenType.COMMA, ",")
-            "." -> Pair(TokenType.DOT, ".")
-            ":" -> Pair(TokenType.COLON, ":")
-            ";" -> Pair(TokenType.SEMICOLON, ";")
-
-            // Arithmetic operator
-            "+" -> Pair(TokenType.PLUS, "+")
-            "-" -> Pair(TokenType.MINUS, "-")
-            "*" -> Pair(TokenType.MULTIPLY, "*")
-            "/" -> Pair(TokenType.DIVIDE, "/")
-            "**" -> Pair(TokenType.POWER, "**")
-            "%" -> Pair(TokenType.MODULO, "%")
-
-            // Comparative operator
-            "==" -> Pair(TokenType.EQUAL, "==")  // Combined from 2 ASSIGN
-            "!=" -> Pair(TokenType.NOT_EQUAL, "!=")  // Combined from NOT and ASSIGN
-            "<" -> Pair(TokenType.LESS, "<")
-            ">" -> Pair(TokenType.GREATER, ">")
-            "<=" -> Pair(TokenType.LESS_EQUAL, "<=")  // Combined from LESS and ASSIGN
-            ">=" -> Pair(TokenType.GREATER_EQUAL, ">=")  // Combined from GREATER and ASSIGN
-
-            // Definitive operator
-            "=" -> Pair(TokenType.ASSIGN, "=")
-//            "++" -> Pair(TokenType.INCREMENT, "++")  // Combined from 2 PLUS
-//            "--" -> Pair(TokenType.DECREMENT, "--")  // Combined from 2 MINUS
-            "+=" -> Pair(TokenType.PLUS_ASSIGN, "+=")  // Combined from PLUS and ASSIGN
-            "-=" -> Pair(TokenType.MINUS_ASSIGN, "-=")  // Combined from MINUS and ASSIGN
-            "*=" -> Pair(TokenType.MULTIPLY_ASSIGN, "*=")  // Combined from MULTIPLY and ASSIGN
-            "/=" -> Pair(TokenType.DIVIDE_ASSIGN, "/=")  // Combined from DIVIDE and ASSIGN
-            "%=" -> Pair(TokenType.MODULO_ASSIGN, "%=")  // Combined from MODULO and ASSIGN
-            "**=" -> Pair(TokenType.POWER_ASSIGN, "**=")  // Combined from POWER and ASSIGN
-
-            // Logic
-            "&" -> Pair(TokenType.AND, "&")
-            "|" -> Pair(TokenType.OR, "|")
-            "!" -> Pair(TokenType.NOT, "!")
-
-            // Keyword
-            "if" -> Pair(TokenType.IF, "if")
-            "elif" -> Pair(TokenType.ELIF, "elif")
-            "else" -> Pair(TokenType.ELSE, "else")
-            "true" -> Pair(TokenType.TRUE, "true")
-            "false" -> Pair(TokenType.FALSE, "false")
-            "for" -> Pair(TokenType.FOR, "for")
-            "while" -> Pair(TokenType.WHILE, "while")
-            "return" -> Pair(TokenType.RETURN, "return")
-            "var" -> Pair(TokenType.VAR, "var")
-            "is" -> Pair(TokenType.IS, "is")
-            "import" -> Pair(TokenType.IMPORT, "import")
-            "in" -> Pair(TokenType.IN, "in")
-            "complete" -> Pair(TokenType.COMPLETE, "complete")
-            "incomplete" -> Pair(TokenType.INCOMPLETE, "incomplete")
-            "break" -> Pair(TokenType.BREAK, "break")
-
-            "EOF" -> Pair(TokenType.EOF, "EOF")
-
-            // Non-fixed-value
-            else -> {
-                if (Regex("^[0-9.]+$").matches(section)) {
-                    Pair(TokenType.NUMBER, section)
-                } else if (Regex("^[a-zA-Z_][a-zA-Z0-9_]*$").matches(section)) {
-                    Pair(TokenType.IDENTIFIER, section)
-                } else if (Regex("^(?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')\$").matches(section)) {  // see https://stackoverflow.com/questions/481282/how-can-i-match-double-quoted-strings-with-escaped-double-quote-characters
-                    Pair(TokenType.STRING, section.substring(1, section.length - 1))
-                } else if (Regex("^ +$").matches(section)) {
-                    Pair(TokenType.SPACE, section)
-                } else if (Regex("^[\r\n]+$").matches(section)) {
-                    Pair(TokenType.LINEBREAK, section)
-                } else {
-                    Pair(TokenType.UNKNOWN, section)
-                }
-            }
+            in Regex("^[0-9.]+$") -> TokenType.NUMBER to section
+            in Regex("^[a-zA-Z_][a-zA-Z0-9_]*$") -> TokenType.IDENTIFIER to section
+            in Regex("^(?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')\$") -> TokenType.STRING to section.substring(1, section.length - 1)
+            in Regex("^ +$") -> TokenType.SPACE to section
+            in Regex("^[\r\n]+$") -> TokenType.LINEBREAK to section
+            else -> TokenType.UNKNOWN to section
         }
     }
 }

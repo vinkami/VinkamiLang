@@ -35,6 +35,74 @@ internal object Constant {
         TokenType.L_BRACE to TokenType.R_BRACE,
     )
 
+    val fixValuedTokenPair: Map<String, TokenType> = mapOf(
+        // Key char
+        "(" to TokenType.L_PARAN,
+        ")" to TokenType.R_PARAN,
+        "[" to TokenType.L_BRAC,
+        "]" to TokenType.R_BRAC,
+        "{" to TokenType.L_BRACE,
+        "}" to TokenType.R_BRACE,
+        "," to TokenType.COMMA,
+        "." to TokenType.DOT,
+        ":" to TokenType.COLON,
+        ";" to TokenType.SEMICOLON,
+
+        // Arithmetic operator
+        "+" to TokenType.PLUS,
+        "-" to TokenType.MINUS,
+        "*" to TokenType.MULTIPLY,
+        "/" to TokenType.DIVIDE,
+        "**" to TokenType.POWER,
+        "%" to TokenType.MODULO,
+
+        // Comparative operator
+        "==" to TokenType.EQUAL,  // Combined from 2 ASSIGN
+        "!=" to TokenType.NOT_EQUAL,  // Combined from NOT and ASSIGN
+        "<" to TokenType.LESS,
+        ">" to TokenType.GREATER,
+        "<=" to TokenType.LESS_EQUAL,  // Combined from LESS and ASSIGN
+        ">=" to TokenType.GREATER_EQUAL,  // Combined from GREATER and ASSIGN
+
+        // Definitive operator
+        "=" to TokenType.ASSIGN,
+        "+=" to TokenType.PLUS_ASSIGN,  // Combined from PLUS and ASSIGN
+        "-=" to TokenType.MINUS_ASSIGN,  // Combined from MINUS and ASSIGN
+        "*=" to TokenType.MULTIPLY_ASSIGN,  // Combined from MULTIPLY and ASSIGN
+        "/=" to TokenType.DIVIDE_ASSIGN,  // Combined from DIVIDE and ASSIGN
+        "%=" to TokenType.MODULO_ASSIGN,  // Combined from MODULO and ASSIGN
+        "**=" to TokenType.POWER_ASSIGN,  // Combined from POWER and ASSIGN
+
+        // Logic operator
+        "&" to TokenType.AND,
+        "|" to TokenType.OR,
+        "!" to TokenType.NOT,
+
+        // Keyword
+        "if" to TokenType.IF,
+        "elif" to TokenType.ELIF,
+        "else" to TokenType.ELSE,
+        "true" to TokenType.TRUE,
+        "false" to TokenType.FALSE,
+
+        "for" to TokenType.FOR,
+        "while" to TokenType.WHILE,
+        "complete" to TokenType.COMPLETE,
+        "incomplete" to TokenType.INCOMPLETE,
+        "break" to TokenType.BREAK,
+
+        "return" to TokenType.RETURN,
+        "fun" to TokenType.FUNC,
+        "class" to TokenType.CLASS,
+
+        "var" to TokenType.VAR,
+        "is" to TokenType.IS,
+        "in" to TokenType.IN,
+        "import" to TokenType.IMPORT,
+
+        "EOF" to TokenType.EOF,
+    )
+
     val bindingPower: Map<TokenType, Pair<Int, Int>> = mapOf(
         TokenType.PLUS to Pair(4, 5), TokenType.MINUS to Pair(4, 5),
         TokenType.MULTIPLY to Pair(6, 7), TokenType.DIVIDE to Pair(6, 7),
