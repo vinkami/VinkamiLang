@@ -9,10 +9,16 @@ import com.vinkami.vinkamilang.language.parse.node.*
 
 class Parser(private val tokens: List<Token>) {
     private var pos = -1
+
     private val currentToken: Token
         get() = tokens[pos]
+    private val currentType: TokenType
+        get() = currentToken.type
+
     private val nextNonSpaceToken: Token
         get() = tokens.subList(pos + 1, tokens.size).firstOrNull { it.type !in listOf(TokenType.SPACE, TokenType.LINEBREAK) } ?: tokens.last()
+    private val nextType: TokenType
+        get() = nextNonSpaceToken.type
 
     init {advance()}
 
@@ -25,7 +31,7 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun skipSpace(): BaseError? {
-        while (listOf(TokenType.SPACE, TokenType.LINEBREAK).contains(currentToken.type)) {
+        while (listOf(TokenType.SPACE, TokenType.LINEBREAK).contains(currentType)) {
             advance().let {if (it != null) return it}
         }
         return null
@@ -47,7 +53,7 @@ class Parser(private val tokens: List<Token>) {
             while (true) {
                 procedures += res(parseOnce()).node  // throws UPAE if currentResult has error
 
-                if (currentToken.type == TokenType.EOF) break
+                if (currentType == TokenType.EOF) break
                 ass()
             }
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
@@ -58,7 +64,7 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun parseOnce(): ParseResult {
-        return when (currentToken.type) {
+        return when (currentType) {
             TokenType.NUMBER, TokenType.IDENTIFIER -> parseBinOp(0)
             TokenType.STRING -> ParseResult(StringNode(currentToken))
             TokenType.PLUS, TokenType.MINUS -> parseUnaryOp()
@@ -66,16 +72,17 @@ class Parser(private val tokens: List<Token>) {
             in Constant.bracket.keys -> parseBracket()
             TokenType.IF -> parseIf()
             TokenType.WHILE, TokenType.FOR -> parseLoop()
+            TokenType.FUNC -> parseFunc()
             TokenType.EOF -> ParseResult(NullNode(currentToken))
             TokenType.UNKNOWN -> ParseResult(IllegalCharError(currentToken))
-            else -> ParseResult(SyntaxError("Unexpected token ${currentToken.type}", currentToken.startPos, currentToken.endPos))
+            else -> ParseResult(SyntaxError("Unexpected token ${currentType}", currentToken.startPos, currentToken.endPos))
             // TODO("Other expr types not implemented")
         }
     }
 
 //    private fun gotoNext(TT: TokenType): BaseLangException? {
-//        while (currentToken.type != TT) {
-//            if (currentToken.type == TokenType.EOF) {
+//        while (currentType != TT) {
+//            if (currentType == TokenType.EOF) {
 //                return SyntaxError("Script ended when expecting a $TT", currentToken.startPos, currentToken.endPos)
 //            }
 //            advance().let { if (it != null) return it }
@@ -90,11 +97,11 @@ class Parser(private val tokens: List<Token>) {
             if (minBP != 0) advance()
             skipSpace()
 
-            val lhs: BaseNode = when (currentToken.type) {
+            val lhs: BaseNode = when (currentType) {
                 TokenType.L_PARAN -> res(parseBracket()).node
                 TokenType.NUMBER -> NumberNode(currentToken)
                 TokenType.IDENTIFIER -> res(parseIden()).node
-                else -> throw SyntaxError("Unexpected token ${currentToken.type}", currentToken.startPos, currentToken.endPos)
+                else -> throw SyntaxError("Unexpected token ${currentType}", currentToken.startPos, currentToken.endPos)
             }
 
             res(processBinOp(minBP, res, lhs))
@@ -152,15 +159,15 @@ class Parser(private val tokens: List<Token>) {
 
         try {
             ass()  // skip var token
-            if (currentToken.type != TokenType.IDENTIFIER) throw SyntaxError("Expected identifier after var", currentToken.startPos, currentToken.endPos)
+            if (currentType != TokenType.IDENTIFIER) throw SyntaxError("Expected identifier after var", currentToken.startPos, currentToken.endPos)
             val iden = res(parseIden()).node as IdenNode
             ass()
 
-            if (currentToken.type !in Constant.difinitiveOp) throw SyntaxError("Expected assignment operator after identifier", currentToken.startPos, currentToken.endPos)
+            if (currentType !in Constant.difinitiveOp) throw SyntaxError("Expected assignment operator after identifier", currentToken.startPos, currentToken.endPos)
             val assignToken = currentToken
             ass()
 
-            if (currentToken.type in listOf(TokenType.EOF, TokenType.LINEBREAK)) throw SyntaxError("Unexpected end of line", currentToken.startPos, currentToken.endPos)
+            if (currentType in listOf(TokenType.EOF, TokenType.LINEBREAK)) throw SyntaxError("Unexpected end of line", currentToken.startPos, currentToken.endPos)
             val value = res(parseOnce()).node
             res(AssignNode(iden, assignToken, value, startPos))
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
@@ -172,7 +179,7 @@ class Parser(private val tokens: List<Token>) {
         val res = ParseResult()
 
         try {
-            val bracketTypeL = currentToken.type
+            val bracketTypeL = currentType
             if (bracketTypeL !in Constant.bracket.keys) throw NotYourFaultError("Illegal bracket type $bracketTypeL", currentToken.startPos, currentToken.endPos)
             val bracketTypeR = Constant.bracket[bracketTypeL]
 
@@ -182,14 +189,14 @@ class Parser(private val tokens: List<Token>) {
 
             while (paranCount > 0) {  // Find the matching closing bracket in terms of number
                 advance()
-                val tt = currentToken.type
+                val tt = currentType
                 if (tt == TokenType.EOF) throw SyntaxError("Script ended when expecting a $bracketTypeR", currentToken.startPos, currentToken.endPos)
                 else if (Constant.bracket.keys.contains(tt)) paranCount++
                 else if (Constant.bracket.values.contains(tt)) paranCount--
             }
 
             // Confirm the "matching" bracket is the same type
-            if (currentToken.type != bracketTypeR) throw SyntaxError("Expected $bracketTypeR, got ${currentToken.type}", currentToken.startPos, currentToken.endPos)
+            if (currentType != bracketTypeR) throw SyntaxError("Expected $bracketTypeR, got ${currentType}", currentToken.startPos, currentToken.endPos)
 
             val endToken = currentToken
             val eof = Token(TokenType.EOF, "EOF", endToken.startPos, endToken.endPos)
@@ -219,7 +226,7 @@ class Parser(private val tokens: List<Token>) {
 
             ass()
             val elif = mutableMapOf<BaseNode, BaseNode>()
-            while (currentToken.type == TokenType.ELIF) {
+            while (currentType == TokenType.ELIF) {
                 ass()
                 val cond = res(parseBracket()).node
                 ass()
@@ -231,7 +238,7 @@ class Parser(private val tokens: List<Token>) {
             }
 
             var elseAction: BaseNode? = null
-            if (currentToken.type == TokenType.ELSE) {
+            if (currentType == TokenType.ELSE) {
                 ass()
                 elseAction = res(parseBracket()).node
                 endPos = currentToken.endPos
@@ -245,7 +252,7 @@ class Parser(private val tokens: List<Token>) {
     private fun parseLoop(): ParseResult {
         val res = ParseResult()
         val startPos = currentToken.startPos
-        val loopTT = currentToken.type
+        val loopTT = currentType
 
         try {
             ass()
@@ -256,9 +263,9 @@ class Parser(private val tokens: List<Token>) {
 
             var compAction: BaseNode? = null
             var incompAction: BaseNode? = null
-            while (nextNonSpaceToken.type in Constant.loopCompleteTT) {
+            while (nextType in Constant.loopCompleteTT) {
                 ass()
-                val tt = currentToken.type
+                val tt = currentType
                 ass()
                 when (tt) {
                     TokenType.COMPLETE -> compAction = res(parseBracket()).node
@@ -273,73 +280,72 @@ class Parser(private val tokens: List<Token>) {
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
     }
 
+    private fun parseFunc(): ParseResult {
+        val res = ParseResult()
+        val startPos = currentToken.startPos
+        val params = mutableListOf<ParamNode>()
+        var returnType: IdenNode? = null
 
-// ------------ Legacy Code ------------
-//
-//    private fun stmIf(): IfStm {
-//        val start = pos
-//        val startToken = currentToken
-//
-//        ass()
-//        val mainCondition = exprBracket()  // if (...) {
-//        ass()
-//        val mainAction = stmBracket()  // { ... }
-//
-//        val elif = mutableMapOf<BaseExpression, BaseStatement>()
-//        ass()
-//        while (currentToken.type == TokenType.ELIF) {
-//            val condition = exprBracket()  // elif (...) {
-//            ass()
-//            val action = stmBracket()  // { ... }
-//            elif[condition] = action
-//            ass()
-//        }
-//
-//        var elseAction: BaseStatement = NullExpr()
-//        if (currentToken.type == TokenType.ELSE) {
-//            gotoNext(TokenType.L_BRACE)
-//            elseAction = stmBracket()  // { ... }
-//            ass()
-//        }
-//
-//        val end = pos
-//        val endToken = currentToken
-//
-//        val ppos = ParsingPosition(start, end, startToken.position, endToken.position)
-//        return IfStm(mainCondition, mainAction, elif, elseAction, ppos)
-//    }
-//
-//    private fun stmLoop(): LoopStm {  // Matches both for and while because of their similar structures
-//        val start = pos
-//        val startToken = currentToken
-//
-//        ass()
-//        val condition = exprBracket()  // while (...) {
-//        ass()
-//        val mainAction = stmBracket()  // { ... }
-//
-//        ass()
-//        var completeAction: BaseStatement = NullExpr()
-//        var incompleteAction: BaseStatement = NullExpr()
-//        while (listOf(TokenType.COMPLETE, TokenType.INCOMPLETE).contains(currentToken.type)) {
-//            val tokenType = currentToken.type
-//            gotoNext(TokenType.L_BRACE)
-//            val action = stmBracket()  // { ... }
-//            if (tokenType == TokenType.COMPLETE) {
-//                if (completeAction !is NullExpr) throw ParsingException("While/For block following with multiple complete actions", currentToken.position)
-//                completeAction = action
-//            } else {
-//                if (incompleteAction !is NullExpr) throw ParsingException("While/For block following with multiple incomplete actions", currentToken.position)
-//                incompleteAction = action
-//            }
-//
-//            ass()
-//        }
-//
-//        val end = pos
-//        val endToken = currentToken
-//
-//        val ppos = ParsingPosition(start, end, startToken.position, endToken.position)
-//        return LoopStm(startToken.type, condition, mainAction, completeAction, incompleteAction, ppos)
-//    }
+        try {
+            ass()
+
+            val name = res(parseIden()).node as IdenNode
+            ass()
+
+            if (currentType != TokenType.L_PARAN) throw SyntaxError("Expected ( after function name", currentToken.startPos, currentToken.endPos)
+
+            if (nextType != TokenType.R_PARAN) {
+                ass()
+                // Has params
+                params += res(parseParam()).node as ParamNode
+
+                while (nextType == TokenType.COMMA) {
+                    ass()
+                    if (nextType != TokenType.IDENTIFIER) throw SyntaxError("Expected parameter name after comma", currentToken.startPos, currentToken.endPos)
+                    ass()
+                    params += res(parseParam()).node as ParamNode
+                }
+            }
+
+            ass()
+            if (nextType == TokenType.COLON) {
+                // Has returnType
+                ass()
+                if (nextType != TokenType.IDENTIFIER) throw SyntaxError("Expected return type after colon", currentToken.startPos, currentToken.endPos)
+                ass()
+                returnType = res(parseIden()).node as IdenNode
+            }
+
+            if (nextType != TokenType.L_BRACE) throw SyntaxError("Expected { after function declaration", currentToken.startPos, currentToken.endPos)
+            ass()
+            val body = res(parseBracket()).node
+
+            return res(FuncNode(name, params, returnType, body, startPos, currentToken.endPos))
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+    }
+
+    private fun parseParam(): ParseResult {
+        val res = ParseResult()
+
+        try {
+            val name = res(parseIden()).node as IdenNode
+            var type: IdenNode? = null
+            var default: BaseNode? = null
+
+            if (nextType == TokenType.COLON) {
+                ass()
+                if (nextType != TokenType.IDENTIFIER) throw SyntaxError("Expected type after :", currentToken.startPos, currentToken.endPos)
+                ass()
+                type = res(parseIden()).node as IdenNode
+            }
+
+            if (nextType == TokenType.ASSIGN) {
+                ass()
+                ass()
+                default = res(parseOnce()).node
+            }
+
+            return res(ParamNode(name, type, default, currentToken.endPos))
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+    }
 }
