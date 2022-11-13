@@ -22,7 +22,7 @@ class Script {
     lateinit var error: BaseError
 
     constructor(file: File, pf: PathFinder) {
-        this.name = file.relativeTo(pf.plugin.dataFolder.resolve("scripts"))
+        this.name = file.relativeTo(pf.scriptFolder)
             .toString()
             .replace("\\", ".")
             .replace(".vk", "")

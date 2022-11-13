@@ -9,21 +9,34 @@ class PathFinder(var plugin: JavaPlugin) {
     val cmdtc = CommandTabCompleter(this)
     @Suppress("unused")
     val logger = plugin.logger
+    val scriptFolder = plugin.dataFolder.resolve("scripts")
+    val config = plugin.config
 
     init {
         this.loadScripts()
         Events(this)
     }
 
-    private fun loadScripts() {
-        for (file in plugin.dataFolder.resolve("scripts").listFiles()!!) {
-            scripts.add(Script(file, this))
+    /**
+     * Load all scripts from the script folder
+     * @return `true` if any `main.vk` file can be found and loaded, `false` otherwise
+     */
+    private fun loadScripts(): Boolean {
+        if (!scriptFolder.exists()) scriptFolder.mkdirs()
+
+        for (file in scriptFolder.listFiles()!!) {
+            if (file.isFile && file.extension == "vk" && !file.name.startsWith("-")) {
+                scripts.add(Script(file, this))
+            }
         }
+
+        scripts.forEach { script -> if (script.name == config.getString("startup script")) return true }
+        return false
     }
 
-    fun reloadScripts() {
+    fun reloadScripts(): Boolean {
         scripts.clear()
-        loadScripts()
+        return loadScripts()
     }
 
     fun listScripts(): List<String> {

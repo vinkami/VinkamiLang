@@ -1,5 +1,5 @@
 # The only script that will be run upon server starts
-startup script: "main.vk"
+startup script: "main"
 
 # The list of players that will be notified for any warnings and errors in the code
 developers:

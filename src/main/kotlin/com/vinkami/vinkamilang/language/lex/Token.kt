@@ -1,6 +1,8 @@
 package com.vinkami.vinkamilang.language.lex
 
 import com.vinkami.vinkamilang.language.Constant
+import com.vinkami.vinkamilang.language.Constant.contains
+
 
 class Token {
     var type: TokenType
@@ -35,7 +37,6 @@ class Token {
     private fun determineTokenPair(section: String): Pair<TokenType, String> {
         Constant.fixValuedTokenPair[section]?.let { return it to section }
 
-        operator fun Regex.contains(other: CharSequence): Boolean = this.matches(other)  // provides `CharSequence in Regex` syntax, which can be used in when statement below
         return when (section) {
             in Regex("^[0-9.]+$") -> TokenType.NUMBER to section
             in Regex("^[a-zA-Z_][a-zA-Z0-9_]*$") -> TokenType.IDENTIFIER to section

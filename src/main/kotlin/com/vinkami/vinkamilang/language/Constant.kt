@@ -104,6 +104,7 @@ internal object Constant {
     )
 
     val bindingPower: Map<TokenType, Pair<Int, Int>> = mapOf(
+        // Used in Pratt parser
         TokenType.PLUS to Pair(4, 5), TokenType.MINUS to Pair(4, 5),
         TokenType.MULTIPLY to Pair(6, 7), TokenType.DIVIDE to Pair(6, 7),
         TokenType.MODULO to Pair(8, 9), TokenType.POWER to Pair(10, 11),
@@ -144,4 +145,11 @@ internal object Constant {
     val loopCompleteTT: List<TokenType> = listOf(
         TokenType.COMPLETE, TokenType.INCOMPLETE
     )
+
+    /**
+     * Provides `String in Regex` syntax, which can be used in when statements
+     *
+     * @param other the string to be matched with the regex
+     */
+    operator fun Regex.contains(other: CharSequence): Boolean = this.matches(other)
 }

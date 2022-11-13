@@ -1,6 +1,7 @@
 package com.vinkami.vinkamilang.language.lex
 
 import com.vinkami.vinkamilang.language.Constant
+import com.vinkami.vinkamilang.language.Constant.contains
 
 
 class Lexer(private val text: String, fileName: String) {
@@ -18,16 +19,19 @@ class Lexer(private val text: String, fileName: String) {
         while (currentChar != null) {
             val startPos = pos.copy()
 
-            val section =
-                if (Regex("[\\d.]") matches currentChar!!) {makeNumber()}
-                else if (Regex("[a-zA-Z]") matches currentChar!!) {makeIdentifier()}
-                else if (Regex("[\'\"]") matches currentChar!!) {makeString()}
-                else if (Regex("\$") matches currentChar!!) {makeVariable()}
-                else {
+
+
+            val section = when (currentChar!!) {
+                in Regex("[\\d.]") -> makeNumber()
+                in Regex("[a-zA-Z]") -> makeIdentifier()
+                in Regex("[\'\"]") -> makeString()
+                in Regex("\$") -> makeVariable()
+                else -> {
                     val c = currentChar!!
                     advance()
                     c
                 }
+            }
 
             val token = Token(section, startPos, pos.copy())
 
@@ -93,6 +97,13 @@ class Lexer(private val text: String, fileName: String) {
         return section
     }
 
+    /**
+     * For tokens like >=, ++, etc. they are not combined in the first lexing step, here will do it.
+     * Working principle: loop all tokens, replace it and the next token if combinable, increment i otherwise
+     *
+     * @param tokens The tokens to be combined
+     * @return The combined tokens (duh)
+     */
     private fun combineTokens(tokens: MutableList<Token>): MutableList<Token> {
         // For tokens like >=, ++, etc. they are not combined in the first lexing step, here will do it.
         // Working principle: loop all tokens, replace it and the next token if combinable, increment i otherwise

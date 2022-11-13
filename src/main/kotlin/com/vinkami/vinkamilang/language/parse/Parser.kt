@@ -37,6 +37,9 @@ class Parser(private val tokens: List<Token>) {
         return null
     }
 
+    /**
+     * Advance, Skip Space
+     */
     private fun ass(): BaseError? {
         advance().let { if (it != null) return it }
         skipSpace().let { if (it != null) return it }
@@ -90,6 +93,12 @@ class Parser(private val tokens: List<Token>) {
 //        return null
 //    }
 
+    /**
+     * Binary Operations
+     * i.e. + - * / % ** == != < > <= >= and stuff like that
+     *
+     * @param minBP Minimum binding power; should be 0 when called from outside and varies according to Constant.bindingPower when called by processBinOp()
+     */
     private fun parseBinOp(minBP: Int): ParseResult {
         val res = ParseResult()
 
@@ -101,7 +110,7 @@ class Parser(private val tokens: List<Token>) {
                 TokenType.L_PARAN -> res(parseBracket()).node
                 TokenType.NUMBER -> NumberNode(currentToken)
                 TokenType.IDENTIFIER -> res(parseIden()).node
-                else -> throw SyntaxError("Unexpected token ${currentType}", currentToken.startPos, currentToken.endPos)
+                else -> throw SyntaxError("Unexpected token $currentType", currentToken.startPos, currentToken.endPos)
             }
 
             res(processBinOp(minBP, res, lhs))
@@ -111,6 +120,14 @@ class Parser(private val tokens: List<Token>) {
         return res
     }
 
+    /**
+     * Actual Pratt parsing part of parseBinOp()
+     * Used by parseBracket() and parseBinOp() so it's broken down into a separate function
+     *
+     * @param minBP see parseBinOp()
+     * @param res the parseResult from the caller
+     * @param currentNode the node to start parsing at
+     */
     private fun processBinOp(minBP: Int, res: ParseResult, currentNode: BaseNode): BaseNode {
         var lhs = currentNode
 
