@@ -40,10 +40,10 @@ class Parser(private val tokens: List<Token>) {
     /**
      * Advance, Skip Space
      */
-    private fun ass(): BaseError? {
+    private tailrec fun ass(n: Int = 1): BaseError? {
         advance().let { if (it != null) return it }
         skipSpace().let { if (it != null) return it }
-        return null
+        return if (n == 1) null else ass(n-1)
     }
 
     fun parse(): ParseResult {
@@ -163,8 +163,40 @@ class Parser(private val tokens: List<Token>) {
         val res = ParseResult()
 
         try {
-            val node = IdenNode(currentToken)
-            res(node)
+            val nameToken = currentToken
+            val withCall = tokens[pos+1].type == TokenType.L_PARAN  // not sumply (nextType == TokenType.L_PARAN) because of space
+            val args = mutableListOf<BaseNode>()
+            val kwargs = mutableMapOf<Token, BaseNode>()
+
+            if (withCall) {
+                ass(2)
+                var argsEnd = false
+                var paramsEnd = nextType == TokenType.R_PARAN
+
+                while (!paramsEnd) {
+                    if (!argsEnd) {
+                        if (nextType == TokenType.ASSIGN) {  // treat this and all future params as kwargs
+                            argsEnd = true
+                            val name = currentToken
+                            ass(2)
+                            kwargs[name] = res(parse()).node
+                        } else {
+                            args += res(parse()).node
+                        }
+
+                    } else {  // kwargs
+                        val name = currentToken
+                        ass()
+                        kwargs[name] = res(parse()).node
+                    }
+
+                    if (currentType == TokenType.R_PARAN) paramsEnd = true
+                    if (currentType != TokenType.COMMA) throw SyntaxError("No comma seperating arguments", currentToken.startPos, currentToken.endPos)
+                    ass(2)
+                }
+            }
+
+            res(IdenNode(nameToken, args, kwargs, withCall, currentToken.endPos))
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
         return res
@@ -306,7 +338,7 @@ class Parser(private val tokens: List<Token>) {
         try {
             ass()
 
-            val name = res(parseIden()).node as IdenNode
+            val name = currentToken
             ass()
 
             if (currentType != TokenType.L_PARAN) throw SyntaxError("Expected ( after function name", currentToken.startPos, currentToken.endPos)
@@ -357,8 +389,7 @@ class Parser(private val tokens: List<Token>) {
             }
 
             if (nextType == TokenType.ASSIGN) {
-                ass()
-                ass()
+                ass(2)
                 default = res(parseOnce()).node
             }
 
