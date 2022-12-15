@@ -19,8 +19,6 @@ class Lexer(private val text: String, fileName: String) {
         while (currentChar != null) {
             val startPos = pos.copy()
 
-
-
             val section = when (currentChar!!) {
                 in Regex("[\\d.]") -> makeNumber()
                 in Regex("[a-zA-Z]") -> makeIdentifier()
@@ -72,7 +70,7 @@ class Lexer(private val text: String, fileName: String) {
         val quote = currentChar!!
         advance()
 
-        while (currentChar != null && (currentChar != quote || if (pos.index != 0) {text[pos.index - 1] == '\\'} else true)) {
+        while (currentChar != null && (currentChar != quote || pos.index == 0 || text[pos.index - 1] == '\\')) {
             section += currentChar
             advance()
         }
@@ -98,7 +96,7 @@ class Lexer(private val text: String, fileName: String) {
     }
 
     /**
-     * For tokens like >=, ++, etc. they are not combined in the first lexing step, here will do it.
+     * For tokens like >=, **, etc. they are not combined in the first lexing step, here will do it.
      * Working principle: loop all tokens, replace it and the next token if combinable, increment i otherwise
      *
      * @param tokens The tokens to be combined
