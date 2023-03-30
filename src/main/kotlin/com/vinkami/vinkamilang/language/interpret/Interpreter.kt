@@ -24,6 +24,7 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
             is IfNode -> interpretIf(node, ref)
             is LoopNode -> interpretLoop(node, ref)
             is ProcedralNode -> interpretProcedural(node, ref)
+            is FuncNode -> interpretFunc(node, ref)
             else -> InterpretResult(UnknownNodeError(node))
         }
     }
@@ -205,5 +206,10 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
         return res(finalObj)
+    }
+
+    private fun interpretFunc(node: FuncNode, ref: Referables): InterpretResult {
+        ref.set(node.name.value, FuncObj(node))
+        return InterpretResult(NullObj(node.startPos, node.endPos))
     }
 }
