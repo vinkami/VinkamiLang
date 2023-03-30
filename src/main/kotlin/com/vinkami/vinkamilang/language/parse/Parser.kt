@@ -75,10 +75,10 @@ class Parser(private val tokens: List<Token>) {
             in Constant.bracket.keys -> parseBracket()
             TokenType.IF -> parseIf()
             TokenType.WHILE, TokenType.FOR -> parseLoop()
-            TokenType.FUNC -> parseFunc()
+            TokenType.FUNC -> parseFuncDef()
             TokenType.EOF -> ParseResult(NullNode(currentToken))
             TokenType.UNKNOWN -> ParseResult(IllegalCharError(currentToken))
-            else -> ParseResult(SyntaxError("Unexpected token ${currentType}", currentToken.startPos, currentToken.endPos))
+            else -> ParseResult(SyntaxError("Unexpected token $currentType", currentToken.startPos, currentToken.endPos))
             // TODO("Other expr types not implemented")
         }
     }
@@ -164,7 +164,7 @@ class Parser(private val tokens: List<Token>) {
 
         try {
             val nameToken = currentToken
-            val withCall = tokens[pos+1].type == TokenType.L_PARAN  // not sumply (nextType == TokenType.L_PARAN) because of space
+            val withCall = tokens[pos+1].type == TokenType.L_PARAN  // not simply (nextType == TokenType.L_PARAN) because of space
             val args = mutableListOf<BaseNode>()
             val kwargs = mutableMapOf<Token, BaseNode>()
 
@@ -179,19 +179,19 @@ class Parser(private val tokens: List<Token>) {
                             argsEnd = true
                             val name = currentToken
                             ass(2)
-                            kwargs[name] = res(parse()).node
+                            kwargs[name] = res(parseOnce()).node
                         } else {
-                            args += res(parse()).node
+                            args += res(parseOnce()).node
                         }
 
                     } else {  // kwargs
                         val name = currentToken
                         ass()
-                        kwargs[name] = res(parse()).node
+                        kwargs[name] = res(parseOnce()).node
                     }
 
-                    if (currentType == TokenType.R_PARAN) paramsEnd = true
-                    if (currentType != TokenType.COMMA) throw SyntaxError("No comma seperating arguments", currentToken.startPos, currentToken.endPos)
+                    if (nextType == TokenType.R_PARAN) paramsEnd = true
+                    else if (nextType != TokenType.COMMA) throw SyntaxError("No comma seperating arguments", currentToken.startPos, currentToken.endPos)
                     ass(2)
                 }
             }
@@ -329,7 +329,7 @@ class Parser(private val tokens: List<Token>) {
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
     }
 
-    private fun parseFunc(): ParseResult {
+    private fun parseFuncDef(): ParseResult {
         val res = ParseResult()
         val startPos = currentToken.startPos
         val params = mutableListOf<ParamNode>()
