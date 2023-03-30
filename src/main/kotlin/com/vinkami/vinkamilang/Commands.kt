@@ -5,6 +5,7 @@ import com.vinkami.vinkamilang.language.interpret.Referables
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
+import org.bukkit.command.ConsoleCommandSender
 import org.bukkit.entity.Player
 
 class Commands(private val pf: PathFinder): CommandExecutor {
@@ -21,7 +22,7 @@ class Commands(private val pf: PathFinder): CommandExecutor {
     )
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
-        if (sender !is Player) { return true }
+        if (sender !is Player && sender !is ConsoleCommandSender) { return true }
         if (command.name.lowercase() != "vk") { return true }
         if (args.isEmpty()) { vkhelp(sender); return true }
 
