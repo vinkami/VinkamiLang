@@ -9,12 +9,13 @@ data class Referables(val variables: MutableMap<String, BaseObject> = mutableMap
         return variables[name] ?: parent?.get(name)
     }
 
-    fun set(name: String, value: BaseObject) {
+    fun set(name: String, value: BaseObject): Referables {
         if (parent?.get(name) != null) {
             parent?.set(name, value)
         } else {
             variables[name] = value
         }
+        return this
     }
 
     fun bornChild(): Referables {
