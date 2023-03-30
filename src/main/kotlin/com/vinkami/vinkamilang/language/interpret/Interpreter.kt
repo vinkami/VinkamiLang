@@ -106,7 +106,22 @@ class Interpreter(private val node: BaseNode, private val ref: Referables = Refe
         val res = InterpretResult()
 
         try {
-            res(ref.get(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos))
+            val obj = ref.get(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos)
+            if (!node.withCall) res(obj)
+            else {
+                if (obj !is FuncObj) return res(TypeError("${obj::class.simpleName} is not callable", node.startPos, node.endPos))
+
+                val funcRef = ref.bornChild()
+                for (i in 0 until node.args.size) {
+                    val arg = res(interpret(node.args[i], ref)).obj
+                    funcRef.set(obj.node.params[i].name, arg)
+                }
+                for ((keyToken, valueNode) in node.kwargs) {
+                    val kwval = res(interpret(valueNode, ref)).obj
+                    funcRef.set(keyToken.value, kwval)
+                }
+                res(interpret(obj.node, funcRef))
+            }
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
         return res
