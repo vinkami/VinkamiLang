@@ -9,7 +9,7 @@ import org.bukkit.command.ConsoleCommandSender
 import org.bukkit.entity.Player
 
 class Commands(private val pf: PathFinder): CommandExecutor {
-    private val vkexecuteRef = Referables()
+    private val vkexecuteRef = Referables(null)
     private val commandList = mapOf(
         // name - (usage - description) - {method}
         "reload" to Triple("/vk reload", "Reload the scripts") {sender: CommandSender, _: Array<out String> -> vkreload(sender)},
@@ -79,7 +79,9 @@ class Commands(private val pf: PathFinder): CommandExecutor {
             return
         }
 
-        player.sendMessage(script.run())
+        val ref = Referables({s: String -> player.sendMessage(s)})
+        val result = script.run(ref)
+        if (result != null) player.sendMessage(result)
     }
 
     private fun vkrunlex(player: CommandSender, scriptName: String) {
@@ -113,8 +115,10 @@ class Commands(private val pf: PathFinder): CommandExecutor {
     }
 
     private fun vkexecute(player: CommandSender, codes: List<String>) {
+        vkexecuteRef.stdout = {s: String -> player.sendMessage(s)}
         val code = codes.joinToString(" ")
         val script = Script("<stdin>", code)
-        player.sendMessage(script.run(vkexecuteRef))
+        val result = script.run(vkexecuteRef)
+        if (result != null) player.sendMessage(result)
     }
 }
