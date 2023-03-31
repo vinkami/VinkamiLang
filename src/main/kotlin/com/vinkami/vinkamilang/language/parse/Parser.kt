@@ -152,7 +152,7 @@ class Parser(private val tokens: List<Token>) {
         try {
             val op = currentToken
             ass()
-            val node = res(parse())
+            val node = res(parseOnce())
             res(UnaryOpNode(op, node.node))
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
@@ -169,11 +169,12 @@ class Parser(private val tokens: List<Token>) {
             val kwargs = mutableMapOf<Token, BaseNode>()
 
             if (withCall) {
-                ass(2)
+                ass()
                 var argsEnd = false
                 var paramsEnd = nextType == TokenType.R_PARAN
 
                 while (!paramsEnd) {
+                    ass()
                     if (!argsEnd) {
                         if (nextType == TokenType.ASSIGN) {  // treat this and all future params as kwargs
                             argsEnd = true
@@ -192,8 +193,9 @@ class Parser(private val tokens: List<Token>) {
 
                     if (nextType == TokenType.R_PARAN) paramsEnd = true
                     else if (nextType != TokenType.COMMA) throw SyntaxError("No comma seperating arguments", currentToken.startPos, currentToken.endPos)
-                    ass(2)
+                    else ass()
                 }
+                ass()
             }
 
             res(IdenNode(nameToken, args, kwargs, withCall, currentToken.endPos))
@@ -245,7 +247,7 @@ class Parser(private val tokens: List<Token>) {
             }
 
             // Confirm the "matching" bracket is the same type
-            if (currentType != bracketTypeR) throw SyntaxError("Expected $bracketTypeR, got ${currentType}", currentToken.startPos, currentToken.endPos)
+            if (currentType != bracketTypeR) throw SyntaxError("Expected $bracketTypeR, got $currentType", currentToken.startPos, currentToken.endPos)
 
             val endToken = currentToken
             val eof = Token(TokenType.EOF, "EOF", endToken.startPos, endToken.endPos)
