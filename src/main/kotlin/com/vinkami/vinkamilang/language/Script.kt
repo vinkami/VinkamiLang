@@ -4,7 +4,6 @@ import com.vinkami.vinkamilang.PathFinder
 import com.vinkami.vinkamilang.language.exception.BaseError
 import com.vinkami.vinkamilang.language.interpret.Interpreter
 import com.vinkami.vinkamilang.language.interpret.Referables
-import com.vinkami.vinkamilang.language.interpret.`object`.BaseObject
 import com.vinkami.vinkamilang.language.lex.Lexer
 import com.vinkami.vinkamilang.language.lex.Token
 import com.vinkami.vinkamilang.language.parse.Parser
@@ -18,7 +17,6 @@ class Script {
 
     lateinit var tokens: List<Token>
     lateinit var node: BaseNode
-    lateinit var value: BaseObject
     lateinit var error: BaseError
 
     constructor(file: File, pf: PathFinder) {
@@ -38,14 +36,14 @@ class Script {
         return "<Script $name>"
     }
 
-    fun run(ref: Referables = Referables()): String {
+    fun run(ref: Referables): String? {
         lex()
         parse()
         if (hasError) return error.toString()
         if (!::node.isInitialized) return "InternalError: No node found"
         interpret(ref)
         if (hasError) return error.toString()
-        return value.toString()
+        return null
     }
 
     fun lex() = apply {
@@ -58,9 +56,8 @@ class Script {
         if (result.hasNode) this.node = result.node
     }
 
-    fun interpret(ref: Referables = Referables()) = apply {
+    fun interpret(ref: Referables) = apply {
         val result = Interpreter(node, ref).interpret()
         if (result.hasError) this.error = result.error
-        if (result.hasObject) this.value = result.obj
     }
 }
