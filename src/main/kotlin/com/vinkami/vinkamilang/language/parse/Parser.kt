@@ -23,17 +23,13 @@ class Parser(private val tokens: List<Token>) {
     init {advance()}
 
     private fun advance(): BaseError? {
-        if (pos  == tokens.size - 1) {
-            return SyntaxError("Unexpected end of file", currentToken.startPos, currentToken.endPos)
-        }
+        if (pos == tokens.size - 1) return SyntaxError("Unexpected end of file", currentToken.startPos, currentToken.endPos)
         pos++
         return null
     }
 
     private fun skipSpace(): BaseError? {
-        while (listOf(TokenType.SPACE, TokenType.LINEBREAK).contains(currentType)) {
-            advance().let {if (it != null) return it}
-        }
+        while (listOf(TokenType.SPACE, TokenType.LINEBREAK).contains(currentType)) advance().let { if (it != null) return it }
         return null
     }
 
@@ -79,19 +75,20 @@ class Parser(private val tokens: List<Token>) {
             TokenType.EOF -> ParseResult(NullNode(currentToken))
             TokenType.UNKNOWN -> ParseResult(IllegalCharError(currentToken))
             else -> ParseResult(SyntaxError("Unexpected token $currentType", currentToken.startPos, currentToken.endPos))
-            // TODO("Other expr types not implemented")
+            // TODO("CLASS not implemented")
         }
     }
 
-//    private fun gotoNext(TT: TokenType): BaseLangException? {
-//        while (currentType != TT) {
-//            if (currentType == TokenType.EOF) {
-//                return SyntaxError("Script ended when expecting a $TT", currentToken.startPos, currentToken.endPos)
-//            }
-//            advance().let { if (it != null) return it }
-//        }
-//        return null
-//    }
+    private fun parseExprOnce(): ParseResult { // Only expressions, not statements
+        return when (currentType) {
+            TokenType.NUMBER -> ParseResult(NumberNode(currentToken))
+            TokenType.IDENTIFIER -> parseIden()
+            TokenType.STRING -> ParseResult(StringNode(currentToken))
+            TokenType.PLUS, TokenType.MINUS -> parseUnaryOp()
+            in Constant.bracket.keys -> parseBracket()
+            else -> ParseResult(SyntaxError("Unexpected token $currentType", currentToken.startPos, currentToken.endPos))
+        }
+    }
 
     /**
      * Binary Operations
@@ -152,8 +149,8 @@ class Parser(private val tokens: List<Token>) {
         try {
             val op = currentToken
             ass()
-            val node = res(parseOnce())
-            res(UnaryOpNode(op, node.node))
+            val inner = res(parseExprOnce())
+            res(processBinOp(0, res, UnaryOpNode(op, inner.node)))  // unary node may be a part of math expression
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
         return res
