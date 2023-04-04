@@ -72,10 +72,10 @@ class Parser(private val tokens: List<Token>) {
             TokenType.IF -> parseIf()
             TokenType.WHILE, TokenType.FOR -> parseLoop()
             TokenType.FUNC -> parseFuncDef()
+            TokenType.CLASS -> parseClass()
             TokenType.EOF -> ParseResult(NullNode(currentToken))
             TokenType.UNKNOWN -> ParseResult(IllegalCharError(currentToken))
             else -> ParseResult(SyntaxError("Unexpected token $currentType", currentToken.startPos, currentToken.endPos))
-            // TODO("CLASS not implemented")
         }
     }
 
@@ -369,6 +369,50 @@ class Parser(private val tokens: List<Token>) {
             val body = res(parseBracket()).node
 
             return res(FuncNode(name, params, returnType, body, startPos, currentToken.endPos))
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+    }
+
+    private fun parseClass(): ParseResult {
+        val res = ParseResult()
+        val startPos = currentToken.startPos
+        val params = mutableListOf<ParamNode>()
+        var parent: IdenNode? = null
+
+        try {
+            ass()
+            val name = currentToken
+            ass()
+
+            // has constructor params
+            if (currentType == TokenType.L_PARAN) {
+                ass()
+                if (currentType == TokenType.IDENTIFIER) {
+                    params += res(parseParam()).node as ParamNode
+
+                    while (nextType == TokenType.COMMA) {
+                        ass()
+                        if (nextType != TokenType.IDENTIFIER) throw SyntaxError("Expected parameter name after comma", currentToken.startPos, currentToken.endPos)
+                        ass()
+                        params += res(parseParam()).node as ParamNode
+                    }
+                    if (nextType != TokenType.R_PARAN) throw SyntaxError("Unclosed bracket", currentToken.startPos, currentToken.endPos)
+                    ass(2)
+                } else if (currentType != TokenType.R_PARAN) throw SyntaxError("Unclosed bracket", currentToken.startPos, currentToken.endPos)
+                else ass()  // skip useless R_PARAN
+            }
+
+            // has inheritance
+            if (currentType == TokenType.COLON) {
+                ass()
+                if (currentType != TokenType.IDENTIFIER) throw SyntaxError("Expect class name after colon", currentToken.startPos, currentToken.endPos)
+                parent = res(parseIden()).node as IdenNode
+                ass()
+            }
+
+            if (currentType != TokenType.L_BRACE) throw SyntaxError("Expected { after class declaration", currentToken.startPos, currentToken.endPos)
+            val body = res(parseBracket()).node
+
+            return res(ClassNode(name, params, parent, body, startPos, currentToken.endPos))
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
     }
 
