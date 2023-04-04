@@ -15,16 +15,8 @@ abstract class BaseLangException(message: String, private val startPos: Position
 
     private fun makeArrow(startPos: Position, endPos: Position): String {
         val result = StringBuilder()
-        val spaces = startPos.column
-        for (i in 0 until spaces) {
-            result.append(" ")
-        }
-
-        val errorLen = endPos.column - startPos.column
-        for (i in 0 until errorLen-1) {
-            result.append("^")
-        }
-
+        result.append(" ".repeat(startPos.column))
+        result.append("^".repeat(endPos.column - startPos.column))
         return result.toString()
     }
 }
