@@ -4,6 +4,7 @@ import com.vinkami.vinkamilang.language.exception.SyntaxError
 import com.vinkami.vinkamilang.language.lex.Position
 
 interface BaseObject {
+    val type: ObjectType
     val value: Any
     val startPos: Position
     val endPos: Position
