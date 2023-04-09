@@ -19,6 +19,13 @@ class Lexer(private val text: String, fileName: String) {
         while (currentChar != null) {
             val startPos = pos.copy()
 
+            if (currentChar == "#") {  // Comment
+                while (currentChar != null && currentChar != "\n") {
+                    advance()
+                }
+                if (currentChar == null) break
+            }
+
             val section = when (currentChar!!) {
                 in Regex("[\\d.]") -> makeNumber()
                 in Regex("[a-zA-Z]") -> makeIdentifier()
