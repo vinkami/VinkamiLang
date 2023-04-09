@@ -4,6 +4,7 @@ import com.vinkami.vinkamilang.language.Constant
 import com.vinkami.vinkamilang.language.interpret.`object`.builtin.BuiltinFunc
 import com.vinkami.vinkamilang.language.exception.*
 import com.vinkami.vinkamilang.language.interpret.`object`.*
+import com.vinkami.vinkamilang.language.lex.Token
 import com.vinkami.vinkamilang.language.lex.TokenType
 import com.vinkami.vinkamilang.language.parse.node.*
 
@@ -25,7 +26,8 @@ class Interpreter(private val node: BaseNode, private val ref: Referables) {
             is IfNode -> interpretIf(node, ref)
             is LoopNode -> interpretLoop(node, ref)
             is ProcedralNode -> interpretProcedural(node, ref)
-            is FuncNode -> interpretFunc(node, ref)
+            is FuncNode -> interpretFuncCreation(node, ref)
+            is ClassNode -> interpretClassCreation(node, ref)
             else -> InterpretResult(UnknownNodeError(node))
         }
     }
@@ -111,55 +113,10 @@ class Interpreter(private val node: BaseNode, private val ref: Referables) {
             if (!node.withCall) res(obj)
             else {
                 when (obj) {
-                    is FuncObj -> {
-                        val funcRef = ref.bornChild()
-                        // set given params
-                        for (i in 0 until node.args.size) {
-                            val arg = res(interpret(node.args[i], ref)).obj
-                            funcRef.set(obj.node.params[i].name, arg)
-                        }
-                        for ((keyToken, valueNode) in node.kwargs) {
-                            val kwval = res(interpret(valueNode, ref)).obj
-                            funcRef.set(keyToken.value, kwval)
-                        }
-                        // check for missing
-                        for (param in obj.node.params) {
-                            if (funcRef.get(param.name) == null) {
-                                if (param.default != null) {
-                                    val defaultValue = res(interpret(param.default, ref)).obj
-                                    funcRef.set(param.name, defaultValue)
-                                } else {
-                                    throw TypeError("Missing argument \"${param.name}\"", node.startPos, node.endPos)
-                                }
-                            }
-                        }
-                        res(res(interpret(obj.node.body, funcRef)).obj)
-                    }
+                    is FuncObj -> res(interpretFunc(obj.node, node.args, node.kwargs, ref.bornChild()))
+                    is BuiltinFunc -> res(interpretBultinFunc(obj, node.args, node.kwargs, ref.bornChild()))
 
-                    is BuiltinFunc -> {
-                        val funcRef = ref.bornChild()
-                        // set given params
-                        for (i in 0 until node.args.size) {
-                            val arg = res(interpret(node.args[i], ref)).obj
-                            funcRef.set(obj.parameters[i].name, arg)
-                        }
-                        for ((keyToken, valueNode) in node.kwargs) {
-                            val kwval = res(interpret(valueNode, ref)).obj
-                            funcRef.set(keyToken.value, kwval)
-                        }
-                        // check for missing
-                        for (param in obj.parameters) {
-                            if (funcRef.get(param.name) == null) {
-                                if (param.default != null) {
-                                    val defaultValue = res(interpret(param.default, ref)).obj
-                                    funcRef.set(param.name, defaultValue)
-                                } else {
-                                    throw TypeError("Missing argument \"${param.name}\"", node.startPos, node.endPos)
-                                }
-                            }
-                        }
-                        res(obj(funcRef))
-                    }
+                    is ClassObj -> res(interpretClass(obj.node, node.args, node.kwargs, ref.bornChild()))
 
                     else -> return res(TypeError("${obj::class.simpleName} is not callable", node.startPos, node.endPos))
                 }
@@ -248,12 +205,10 @@ class Interpreter(private val node: BaseNode, private val ref: Referables) {
 
     private fun interpretProcedural(node: ProcedralNode, ref: Referables): InterpretResult {
         val res = InterpretResult()
-        val localRef = ref.bornChild()
-        var finalObj: BaseObject = NullObj(node.startPos, node.endPos)
 
         try {
             for (procedure in node.procedures) {
-                finalObj = res(interpret(procedure, localRef)).obj  // throw UPAE if res has error
+                res(interpret(procedure, ref))
 
                 if (res.interrupt != null) {
                     res.clearInterrupt()
@@ -262,11 +217,102 @@ class Interpreter(private val node: BaseNode, private val ref: Referables) {
             }
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
 
-        return res(finalObj)
+        return res(NullObj(node.startPos, node.endPos))
     }
 
-    private fun interpretFunc(node: FuncNode, ref: Referables): InterpretResult {
+    private fun interpretFuncCreation(node: FuncNode, ref: Referables): InterpretResult {
         ref.set(node.name.value, FuncObj(node))
         return InterpretResult(NullObj(node.startPos, node.endPos))
+    }
+
+    private fun interpretFunc(node: FuncNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables): InterpretResult {
+        val res = InterpretResult()
+
+        // set given params
+        for (i in args.indices) {
+            val arg = res(interpret(args[i], ref)).obj
+            ref.set(node.params[i].name, arg)
+        }
+        for ((keyToken, valueNode) in kwargs) {
+            val kwval = res(interpret(valueNode, ref)).obj
+            ref.set(keyToken.value, kwval)
+        }
+        // check for missing
+        for (param in node.params) {
+            if (ref.get(param.name) == null) {
+                if (param.default != null) {
+                    val defaultValue = res(interpret(param.default, ref)).obj
+                    ref.set(param.name, defaultValue)
+                } else {
+                    throw TypeError("Missing argument \"${param.name}\"", node.startPos, node.endPos)
+                }
+            }
+        }
+        return res(res(interpret(node.body, ref)).obj)
+    }
+
+    private fun interpretBultinFunc(obj: BuiltinFunc, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables): InterpretResult {
+        val res = InterpretResult()
+
+        // set given params
+        for (i in args.indices) {
+            val arg = res(interpret(args[i], ref)).obj
+            ref.set(obj.parameters[i].name, arg)
+        }
+        for ((keyToken, valueNode) in kwargs) {
+            val kwval = res(interpret(valueNode, ref)).obj
+            ref.set(keyToken.value, kwval)
+        }
+        // check for missing
+        for (param in obj.parameters) {
+            if (ref.get(param.name) == null) {
+                if (param.default != null) {
+                    val defaultValue = res(interpret(param.default, ref)).obj
+                    ref.set(param.name, defaultValue)
+                } else {
+                    throw TypeError("Missing argument \"${param.name}\"", node.startPos, node.endPos)
+                }
+            }
+        }
+        return res(obj(ref))
+    }
+
+    private fun interpretClassCreation(node: ClassNode, ref: Referables): InterpretResult {
+        ref.set(node.name.value, ClassObj(node))
+        return InterpretResult(NullObj(node.startPos, node.endPos))
+    }
+
+    private fun interpretClass(node: ClassNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables): InterpretResult {
+        val res = InterpretResult()
+        val classRef = Referables(ref.stdout)
+
+        // set given params
+        for (i in args.indices) {
+            val arg = res(interpret(args[i], ref)).obj
+            classRef.set(node.initParams[i].name, arg)
+        }
+        for ((keyToken, valueNode) in kwargs) {
+            val kwval = res(interpret(valueNode, ref)).obj
+            classRef.set(keyToken.value, kwval)
+        }
+        // check for missing params
+        for (param in node.initParams) {
+            if (classRef.get(param.name) == null) {
+                if (param.default != null) {
+                    val defaultValue = res(interpret(param.default, ref)).obj
+                    classRef.set(param.name, defaultValue)
+                } else {
+                    throw TypeError("Missing argument \"${param.name}\"", node.startPos, node.endPos)
+                }
+            }
+        }
+
+        // set class methods, constants, etc. and does the init work
+        // TODO: inheritance
+        // TODO: not sure if classRef has things inside it
+        res(interpret(node.body, classRef.withTempParent(ref)))
+        classRef.removeTempParent()
+
+        return res(CustomObj(node.name.value, classRef, node.startPos, node.endPos))
     }
 }
