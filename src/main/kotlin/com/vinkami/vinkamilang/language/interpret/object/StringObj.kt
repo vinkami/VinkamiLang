@@ -4,7 +4,7 @@ import com.vinkami.vinkamilang.language.lex.Position
 import kotlin.math.round
 
 class StringObj(override val value: String, override val startPos: Position, override val endPos: Position): BaseObject {
-    override val type = ObjectType.STRING
+    override val type = "String"
     override fun boolVal() = value.isNotEmpty()
     override fun toString(): String = value
 
