@@ -51,7 +51,6 @@ class Parser(private val tokens: List<Token>) {
             skipSpace()
             while (true) {
                 procedures += res(parseOnce()).node  // throws UPAE if currentResult has error
-
                 if (currentType == TokenType.EOF) break
                 ass()
             }
@@ -59,11 +58,13 @@ class Parser(private val tokens: List<Token>) {
         val endPos = currentToken.endPos
 
         if (procedures.size == 1 || procedures.size == 2) return res(procedures[0])  // 1: Only NullNode from EOF; 2: Only one procedure
-        return res(ProcedralNode(procedures.dropLast(1), startPos, endPos))
+        return res(ProcedureNode(procedures, startPos, endPos))
     }
 
     private fun parseOnce(): ParseResult {
-        return when (currentType) {
+        val res = ParseResult()
+
+        var currentProcedure = res(when (currentType) {
             TokenType.NUMBER, TokenType.IDENTIFIER -> parseBinOp(0)
             TokenType.STRING -> ParseResult(StringNode(currentToken))
             TokenType.PLUS, TokenType.MINUS -> parseUnaryOp()
@@ -76,7 +77,15 @@ class Parser(private val tokens: List<Token>) {
             TokenType.EOF -> ParseResult(NullNode(currentToken))
             TokenType.UNKNOWN -> ParseResult(IllegalCharError(currentToken))
             else -> ParseResult(SyntaxError("Unexpected token $currentType", currentToken.startPos, currentToken.endPos))
+        }).node
+
+        while (true) {  // immediate next token instead of next non-space
+            if (pos == tokens.size - 1) break
+            if (tokens[pos+1].type != TokenType.DOT) break
+            currentProcedure = res(parseProp(currentProcedure)).node  // gets property
         }
+
+        return res(currentProcedure)
     }
 
     private fun parseExprOnce(): ParseResult { // Only expressions, not statements
@@ -437,6 +446,20 @@ class Parser(private val tokens: List<Token>) {
             }
 
             return res(ParamNode(name, type, default, currentToken.endPos))
+        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+    }
+
+    private fun parseProp(node: BaseNode): ParseResult {
+        val res = ParseResult()
+
+        try {
+            advance()
+            advance()
+            if (currentType != TokenType.IDENTIFIER) throw SyntaxError("Expected property name after .", currentToken.startPos, currentToken.endPos)
+
+            val prop = res(parseOnce()).node as IdenNode
+
+            return res(PropAccessNode(node, prop))
         } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
     }
 }
