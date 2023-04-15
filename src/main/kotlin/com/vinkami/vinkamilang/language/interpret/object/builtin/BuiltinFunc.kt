@@ -9,6 +9,7 @@ abstract class BuiltinFunc(val name: String): BaseObject {
     override val value = name
     override val startPos = Position(-1, -1, -1, "builtin", "builtin")
     override val endPos = Position(-1, -1, -1, "builtin", "builtin")
+    override val property = Referables(null, isRoot=false)
 
     override fun toString(): String {
         return "<function $name>"

@@ -1,6 +1,7 @@
 package com.vinkami.vinkamilang.language.interpret.`object`
 
 import com.vinkami.vinkamilang.language.exception.SyntaxError
+import com.vinkami.vinkamilang.language.interpret.Referables
 import com.vinkami.vinkamilang.language.lex.Position
 
 interface BaseObject {
@@ -8,6 +9,7 @@ interface BaseObject {
     val value: Any
     val startPos: Position
     val endPos: Position
+    val property: Referables
     fun boolVal(): Boolean = true
 
     fun plus(other: BaseObject): BaseObject = throw SyntaxError("Can't add $this and $other", startPos, endPos)

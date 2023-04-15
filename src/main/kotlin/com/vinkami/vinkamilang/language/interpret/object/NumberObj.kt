@@ -1,10 +1,12 @@
 package com.vinkami.vinkamilang.language.interpret.`object`
 
+import com.vinkami.vinkamilang.language.interpret.Referables
 import com.vinkami.vinkamilang.language.lex.Position
 import kotlin.math.pow
 
 class NumberObj(override val value: Float, override val startPos: Position, override val endPos: Position): BaseObject {
     override val type = "Number"
+    override val property = Referables(null, isRoot=false)
     override fun boolVal(): Boolean = value != 0f
 
     override fun toString(): String {
