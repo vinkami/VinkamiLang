@@ -2,19 +2,24 @@ package com.vinkami.vinkamilang.language.interpret
 
 import com.vinkami.vinkamilang.language.interpret.`object`.BaseObject
 import com.vinkami.vinkamilang.language.interpret.`object`.builtin.PrintFunc
+import com.vinkami.vinkamilang.language.interpret.`object`.builtin.TypeFunc
 
-data class Referables(var stdout: ((String)-> Unit)?, val variables: MutableMap<String, BaseObject> = mutableMapOf(), val isRoot: Boolean=true) {
+data class Referables(var stdout: ((String) -> Unit)?, private val variables: MutableMap<String, BaseObject> = mutableMapOf(), private val isRoot: Boolean=true) {
     private var parent: Referables? = null
-    private var tempParent: Referables? = null
 
     init {
         if (isRoot) {
             set("print", PrintFunc())
+            set("type", TypeFunc())
         }
     }
 
     fun get(name: String): BaseObject? {
-        return variables[name] ?: parent?.get(name) ?: tempParent?.get(name)
+        return variables[name] ?: parent?.get(name)
+    }
+
+    fun dotGet(name: String): BaseObject? {
+        return variables[name]
     }
 
     fun set(name: String, value: BaseObject): Referables {
@@ -30,14 +35,5 @@ data class Referables(var stdout: ((String)-> Unit)?, val variables: MutableMap<
         val child = Referables(stdout, isRoot=false)
         child.parent = this
         return child
-    }
-
-    fun withTempParent(parent: Referables): Referables {
-        tempParent = parent
-        return this
-    }
-
-    fun removeTempParent() {
-        tempParent = null
     }
 }
