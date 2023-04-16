@@ -1,5 +1,6 @@
 package com.vinkami.vinkamilang.language.interpret.`object`.builtin
 
+import com.vinkami.vinkamilang.language.Constant.builtinPos
 import com.vinkami.vinkamilang.language.interpret.Referables
 import com.vinkami.vinkamilang.language.interpret.`object`.BaseObject
 import com.vinkami.vinkamilang.language.lex.Position
@@ -7,8 +8,8 @@ import com.vinkami.vinkamilang.language.lex.Position
 abstract class BuiltinFunc(val name: String): BaseObject {
     override val type = "Function"
     override val value = name
-    override val startPos = Position(-1, -1, -1, "builtin", "builtin")
-    override val endPos = Position(-1, -1, -1, "builtin", "builtin")
+    override val startPos = builtinPos
+    override val endPos = builtinPos
     override val property = Referables(null, isRoot=false)
 
     override fun toString(): String {

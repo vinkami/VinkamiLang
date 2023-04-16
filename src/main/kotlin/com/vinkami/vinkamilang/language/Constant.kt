@@ -1,5 +1,6 @@
 package com.vinkami.vinkamilang.language
 
+import com.vinkami.vinkamilang.language.lex.Position
 import com.vinkami.vinkamilang.language.lex.Token
 import com.vinkami.vinkamilang.language.lex.TokenType
 
@@ -152,4 +153,6 @@ internal object Constant {
      * @param other the string to be matched with the regex
      */
     operator fun Regex.contains(other: CharSequence): Boolean = this.matches(other)
+
+    val builtinPos = Position(-1, -1, -1, "builtin", "builtin")
 }
