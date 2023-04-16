@@ -18,8 +18,16 @@ data class Referables(var stdout: ((String) -> Unit)?, private val variables: Mu
         return variables[name] ?: parent?.get(name)
     }
 
-    fun dotGet(name: String): BaseObject? {
+    fun getLocal(name: String): BaseObject? {
         return variables[name]
+    }
+
+    fun contain(name: String): Boolean {
+        return variables.containsKey(name) || parent?.contain(name) ?: false
+    }
+
+    fun containLocal(name: String): Boolean {
+        return variables.containsKey(name)
     }
 
     fun set(name: String, value: BaseObject): Referables {
