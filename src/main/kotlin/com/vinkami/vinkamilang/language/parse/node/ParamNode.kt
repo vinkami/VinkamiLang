@@ -2,7 +2,7 @@ package com.vinkami.vinkamilang.language.parse.node
 
 import com.vinkami.vinkamilang.language.lex.Position
 
-class ParamNode(val node: IdenNode, val type: IdenNode?, val default: BaseNode?, endPos: Position): BaseNode(node.startPos, endPos) {
+class ParamNode(val node: IdenNode, val type: IdenNode?, val default: BaseNode?, endPos: Position, val variable: Boolean = false, val kwvariable: Boolean = false): BaseNode(node.startPos, endPos) {
     val name = node.name
 
     override fun toString(): String {
