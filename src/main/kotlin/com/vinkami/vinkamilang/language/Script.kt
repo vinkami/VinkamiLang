@@ -40,7 +40,7 @@ class Script {
         lex()
         parse()
         if (hasError) return error.toString()
-        if (!::node.isInitialized) return "InternalError: No node found"
+        if (!::node.isInitialized) return "NotYourFaultError: No node found"
         interpret(ref)
         if (hasError) return error.toString()
         return null
