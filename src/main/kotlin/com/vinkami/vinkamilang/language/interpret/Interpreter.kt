@@ -102,7 +102,6 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpretUnaryOp(node: UnaryOpNode, ref: Referables): BaseObject {
-
         val innerNode = interpret(node.innerNode, ref).obj
 
         return when (node.op.type) {
@@ -244,36 +243,39 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun setParams(params: List<Parameter>, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): Referables {
-        // normal arguments
         val varArg = params.find { it.variable }
+        val varKwarg = params.find { it.kwvariable }
+
+        // normal arguments
+        val modifier = (if (varArg != null) 1 else 0) + (if (varKwarg != null) 1 else 0)
+        val argParamNumber = params.count { it.default == null } - modifier
+        if (args.size < argParamNumber) throw TypeError("Not enough arguments", startPos, endPos)
         if (varArg != null) {
-            if (args.size < params.count { it.default == null }) throw TypeError("Not enough arguments", startPos, endPos)
             val varArgsIndex = params.indexOf(varArg)
 
             // first part of arguments
             args.subList(0, varArgsIndex).forEachIndexed { i, it ->  ref.set(params[i].name, interpret(it, ref).obj) }
 
             // variable arguments
-            val argv = args.subList(varArgsIndex, args.size - params.size + varArgsIndex + 1).map { interpret(it, ref).obj }
-            ref.set(varArg.name, ListObj(argv, argv[0].startPos, argv[argv.size - 1].endPos))
+            val argvEnd = args.size - argParamNumber + varArgsIndex
+            val argv = args.subList(varArgsIndex, argvEnd).map { interpret(it, ref).obj }
+            ref.set(varArg.name, ListObj(argv, startPos, endPos))
 
             // last part of arguments
-            args.subList(args.size - params.size + varArgsIndex + 1, args.size).forEachIndexed { i, it ->  ref.set(params[i + varArgsIndex + 1].name, interpret(it, ref).obj) }
+            args.subList(argvEnd, args.size).forEachIndexed { i, it ->  ref.set(params[i + varArgsIndex + 1].name, interpret(it, ref).obj) }
         } else {
-            if (args.size < params.count { it.default == null }) throw TypeError("Not enough arguments", startPos, endPos)
             if (args.size > params.size) throw TypeError("Too many arguments", startPos, endPos)
             args.forEachIndexed { i, it ->  ref.set(params[i].name, interpret(it, ref).obj)}
         }
 
         // keyword arguments
-        val varKwarg = params.find { it.kwvariable }
         if (varKwarg != null) {
             // normal keyword arguments
-            kwargs.filter { it.key.value in params.map { param -> param.name } }.forEach { ref.set(it.key.value, interpret(it.value, ref).obj) }
+            kwargs.filter { it.key.value in params.map { param -> param.name } - varKwarg.name }.forEach { ref.set(it.key.value, interpret(it.value, ref).obj) }
 
             // variable kw arguments
             val kwargMap = mutableMapOf<String, BaseObject>()
-            kwargs.filter { it.key.value !in params.map { param -> param.name } }.forEach { kwargMap[it.key.value] = interpret(it.value, ref).obj }
+            kwargs.filter { it.key.value !in params.map { param -> param.name } - varKwarg.name }.forEach { kwargMap[it.key.value] = interpret(it.value, ref).obj }
             ref.set(varKwarg.name, MapObj(kwargMap, startPos, endPos))
         } else {
             kwargs.forEach { ref.set(it.key.value, interpret(it.value, ref).obj) }
