@@ -8,6 +8,8 @@ class ParamNode(val node: IdenNode, val type: IdenNode?, val default: BaseNode?,
     override fun toString(): String {
         val sb = StringBuilder()
         sb.append(name)
+        if (variable) sb.append("*")
+        if (kwvariable) sb.append("**")
         if (type != null) sb.append(": $type")
         if (default != null) sb.append(" = $default")
         return sb.toString()
