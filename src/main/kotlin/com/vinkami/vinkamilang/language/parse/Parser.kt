@@ -27,24 +27,22 @@ class Parser(private val tokens: List<Token>) {
 
     init {advance()}
 
-    private fun advance(): BaseError? {
-        if (pos == tokens.size - 1) return SyntaxError("Unexpected end of file", currentStartPos, currentEndPos)
+    private fun advance() {
+        if (pos == tokens.size - 1) throw SyntaxError("Unexpected end of file", currentStartPos, currentEndPos)
         pos++
-        return null
     }
 
-    private fun skipSpace(): BaseError? {
-        while (listOf(TokenType.SPACE, TokenType.LINEBREAK).contains(currentType)) advance().let { if (it != null) return it }
-        return null
+    private fun skipSpace() {
+        while (listOf(TokenType.SPACE, TokenType.LINEBREAK).contains(currentType)) advance()
     }
 
     /**
      * Advance, Skip Space
      */
-    private tailrec fun ass(n: Int = 1): BaseError? {
-        advance().let { if (it != null) return it }
-        skipSpace().let { if (it != null) return it }
-        return if (n == 1) null else ass(n-1)
+    private tailrec fun ass(n: Int = 1) {
+        advance()
+        skipSpace()
+        return if (n == 1) Unit else ass(n-1)
     }
 
     fun parse(): ParseResult {
