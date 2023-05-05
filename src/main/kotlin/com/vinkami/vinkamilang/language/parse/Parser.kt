@@ -177,7 +177,8 @@ class Parser(private val tokens: List<Token>) {
 
                 } else {  // kwargs
                     val name = currentToken
-                    ass()
+                    if (nextType != TokenType.ASSIGN) throw SyntaxError("No assign symbol in between", currentStartPos, currentEndPos)
+                    ass(2)
                     kwargs[name] = parseOnce()
                 }
 
@@ -396,8 +397,8 @@ class Parser(private val tokens: List<Token>) {
         var variable = false
         var kwvariable = false
 
-        if (currentType == TokenType.MULTIPLY) { variable = true; ass() }
-        else if (currentType == TokenType.POWER) { kwvariable = true; ass() }
+        if (currentType == TokenType.MULTIPLY) { variable = true; advance() }
+        else if (currentType == TokenType.POWER) { kwvariable = true; advance() }
 
         if (currentType != TokenType.IDENTIFIER) throw SyntaxError("Illegal character", currentStartPos, currentEndPos)
 
