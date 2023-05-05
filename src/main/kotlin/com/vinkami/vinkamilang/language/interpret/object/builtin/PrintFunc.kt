@@ -7,7 +7,7 @@ import com.vinkami.vinkamilang.language.interpret.`object`.NullObj
 import com.vinkami.vinkamilang.language.interpret.`object`.StringObj
 
 class PrintFunc: BuiltinFunc("print") {
-    override val parameters = listOf(Parameter("s", "String", StringObj("", this.startPos, this.endPos)))
+    override val parameters = listOf(Parameter("s", null, StringObj("", this.startPos, this.endPos)))
 
     override operator fun invoke(ref: Referables): BaseObject {
         val stdout = ref.stdout

@@ -3,7 +3,6 @@ package com.vinkami.vinkamilang.language.interpret.`object`.builtin
 import com.vinkami.vinkamilang.language.Constant.builtinPos
 import com.vinkami.vinkamilang.language.interpret.Referables
 import com.vinkami.vinkamilang.language.interpret.`object`.BaseObject
-import com.vinkami.vinkamilang.language.lex.Position
 
 abstract class BuiltinFunc(val name: String): BaseObject {
     override val type = "Function"
