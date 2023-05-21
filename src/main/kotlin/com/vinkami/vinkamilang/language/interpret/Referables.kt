@@ -4,7 +4,7 @@ import com.vinkami.vinkamilang.language.interpret.`object`.BaseObject
 import com.vinkami.vinkamilang.language.interpret.`object`.builtin.PrintFunc
 import com.vinkami.vinkamilang.language.interpret.`object`.builtin.TypeFunc
 
-data class Referables(var stdout: ((String) -> Unit)?, private val variables: MutableMap<String, BaseObject> = mutableMapOf(), private val isRoot: Boolean=true) {
+data class Referables(var stdout: ((String) -> Unit)? = null, private val variables: MutableMap<String, BaseObject> = mutableMapOf(), private val isRoot: Boolean=true) {
     private var parent: Referables? = null
 
     init {
