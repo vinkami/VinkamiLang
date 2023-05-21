@@ -370,7 +370,7 @@ class Parser(private val tokens: List<Token>) {
         val body = parseBracket()
 
         return ClassNode(name, params, parent, body, startPos, currentEndPos)
-        }
+    }
 
     private fun generateParams(): List<ParamNode> {
         val params = mutableListOf<ParamNode>()
