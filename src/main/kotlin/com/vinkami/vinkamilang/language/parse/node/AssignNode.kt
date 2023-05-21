@@ -5,6 +5,6 @@ import com.vinkami.vinkamilang.language.lex.Token
 
 class AssignNode(val iden: IdenNode, val assignToken: Token, val value: BaseNode, startPos: Position): BaseNode(startPos, value.endPos) {
     override fun toString(): String {
-        return "($iden $assignToken $value)"
+        return "($iden $assignToken $value)$callStr"
     }
 }

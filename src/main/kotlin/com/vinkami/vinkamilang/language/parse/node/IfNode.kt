@@ -19,6 +19,7 @@ class IfNode(val condition: BaseNode, val action: BaseNode,
         }
 
         sb.append(")")
+        sb.append(callStr)
         return sb.toString()
     }
 }

@@ -10,6 +10,7 @@ class ProcedureNode(val procedures: List<BaseNode>, startPos: Position, endPos: 
             sb.append("$procedure; ")
         }
         sb.append(")")
+        sb.append(callStr)
         return sb.toString()
     }
 }

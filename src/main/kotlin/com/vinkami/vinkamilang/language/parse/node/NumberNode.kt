@@ -6,6 +6,6 @@ class NumberNode(token: Token): BaseNode(token.startPos, token.endPos) {
     val value = token.value
 
     override fun toString(): String {
-        return value
+        return value + callStr
     }
 }

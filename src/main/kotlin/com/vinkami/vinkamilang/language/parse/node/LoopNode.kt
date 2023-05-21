@@ -17,6 +17,7 @@ class LoopNode(val loopTokenType: TokenType, val condition: BaseNode, val mainAc
             sb.append(" | incomplete -> $incompAction")
         }
         sb.append(")")
+        sb.append(callStr)
         return sb.toString()
     }
 }

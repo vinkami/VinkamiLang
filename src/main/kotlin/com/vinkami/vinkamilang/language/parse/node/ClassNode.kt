@@ -14,6 +14,7 @@ class ClassNode(val name: Token, val initParams: List<ParamNode>, val parent: Id
         }
         if (parent != null) sb.append(": $parent")
         sb.append(" $body)")
+        sb.append(callStr)
         return sb.toString()
     }
 }

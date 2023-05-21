@@ -4,6 +4,6 @@ import com.vinkami.vinkamilang.language.lex.Token
 
 class BinOpNode(val left: BaseNode, val op: Token, val right: BaseNode): BaseNode(left.startPos, right.endPos) {
     override fun toString(): String {
-        return "($left $op $right)"
+        return "($left $op $right)$callStr"
     }
 }

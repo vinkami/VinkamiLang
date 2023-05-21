@@ -11,6 +11,7 @@ class FuncNode(val name: Token, val params: List<ParamNode>, val returnType: Ide
         sb.append(")")
         if (returnType != null) sb.append(": $returnType")
         sb.append(" $body)")
+        sb.append(callStr)
         return sb.toString()
     }
 }

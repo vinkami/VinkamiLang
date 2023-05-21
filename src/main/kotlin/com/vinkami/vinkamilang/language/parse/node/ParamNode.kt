@@ -12,6 +12,7 @@ class ParamNode(val node: IdenNode, val type: IdenNode?, val default: BaseNode?,
         if (kwvariable) sb.append("**")
         if (type != null) sb.append(": $type")
         if (default != null) sb.append(" = $default")
+        sb.append(callStr)
         return sb.toString()
     }
 }
