@@ -53,11 +53,14 @@ class Parser(private val tokens: List<Token>) {
         try {
             skipSpace()
             while (true) {
-                procedures += res(parseOnce()).node  // throws UPAE if currentResult has error
+                val procedure = parseOnce()
+                if (procedure is ArgumentsNode) procedures.lastOrNull()?.let { it.call = procedure }
+                    ?: throw SyntaxError("Nothing to be called", procedure.startPos, procedure.endPos)
+                else procedures += procedure
                 if (currentType == TokenType.EOF) break
                 ass()
             }
-        } catch (e: BaseError) { return res(e) } catch (e: UninitializedPropertyAccessException) { return res }
+        } catch (e: BaseError) { return res(e) }
         val endPos = currentEndPos
 
         if (procedures.size == 1 || procedures.size == 2) return res(procedures[0])  // 1: Only NullNode from EOF; 2: Only one procedure
@@ -152,45 +155,7 @@ class Parser(private val tokens: List<Token>) {
         return processBinOp(0, UnaryOpNode(op, inner))  // unary node may be a part of math expression
     }
 
-    private fun parseIden(): IdenNode {
-        val nameToken = currentToken
-        val withCall = tokens[pos+1].type == TokenType.L_PARAN  // not simply (nextType == TokenType.L_PARAN) because of space
-        val args = mutableListOf<BaseNode>()
-        val kwargs = mutableMapOf<Token, BaseNode>()
-
-        if (withCall) {
-            ass()
-            var argsEnd = false
-            var paramsEnd = nextType == TokenType.R_PARAN
-
-            while (!paramsEnd) {
-                ass()
-                if (!argsEnd) {
-                    if (nextType == TokenType.ASSIGN) {  // treat this and all future params as kwargs
-                        argsEnd = true
-                        val name = currentToken
-                        ass(2)
-                        kwargs[name] = parseOnce()
-                    } else {
-                        args += parseOnce()
-                    }
-
-                } else {  // kwargs
-                    val name = currentToken
-                    if (nextType != TokenType.ASSIGN) throw SyntaxError("No assign symbol in between", currentStartPos, currentEndPos)
-                    ass(2)
-                    kwargs[name] = parseOnce()
-                }
-
-                if (nextType == TokenType.R_PARAN) paramsEnd = true
-                else if (nextType != TokenType.COMMA) throw SyntaxError("No comma seperating arguments", currentStartPos, currentEndPos)
-                else ass()
-            }
-            ass()
-        }
-
-        return IdenNode(nameToken, args, kwargs, withCall, currentEndPos)
-    }
+    private fun parseIden(): IdenNode = IdenNode(currentToken)
 
     private fun parseAssign(): AssignNode {
         val startPos = currentStartPos
@@ -233,12 +198,68 @@ class Parser(private val tokens: List<Token>) {
         val endToken = currentToken
         val eof = Token(TokenType.EOF, "EOF", endToken.startPos, endToken.endPos)
         val innerTokens = tokens.subList(start + 1, pos) + eof
-        val innerResult = if (innerTokens.isNotEmpty()) Parser(innerTokens).parse().node else NullNode(currentToken)
 
-        val node = BracketNode(startToken, innerResult, endToken)
+        if (innerTokens.isEmpty()) return BracketNode(startToken, NullNode(currentToken), endToken)
 
-        return if (bracketTypeL == TokenType.L_PARAN) processBinOp(0, node)  // Try to continue parsing the bracket as a binop, return itself if not anyway
-        else node
+        return when (bracketTypeL) {
+            TokenType.L_PARAN -> {
+                if (start == 0 || tokens[start - 1].type in listOf(TokenType.PLUS, TokenType.MINUS, TokenType.SPACE, TokenType.LINEBREAK)) {  // parse as if it's a part of math expr
+                    val node = BracketNode(startToken, Parser(innerTokens).parse().node, endToken)
+                    processBinOp(0, node)  // Try to continue parsing the bracket as a binop, return itself if not anyway
+                } else {  // parse as a list of arguments
+                    val (args, kwargs) = Parser(innerTokens).generateArguments()
+                    ArgumentsNode(args, kwargs, startToken.startPos, currentEndPos)
+                }
+            }
+
+            TokenType.L_BRAC -> {  // lua table
+                val (args, kwargs) = Parser(innerTokens).generateArguments()
+                if (args.isNotEmpty() && kwargs.isNotEmpty()) throw SyntaxError("Table type unsure", currentStartPos, currentEndPos)
+
+                if (args.isNotEmpty()) ListNode(args, startToken.startPos, currentEndPos)
+                else DictNode(kwargs, startToken.startPos, currentEndPos)
+            }
+
+            TokenType.L_BRACE -> {
+                val node = Parser(innerTokens).parse().node
+                BracketNode(startToken, node, endToken)
+            }
+
+            else -> throw NotYourFaultError("Illegal bracket type $bracketTypeL", currentStartPos, currentEndPos)
+        }
+    }
+
+    private fun generateArguments(): Pair<List<BaseNode>, Map<Token, BaseNode>> {
+        val args = mutableListOf<BaseNode>()
+        val kwargs = mutableMapOf<Token, BaseNode>()
+
+        var argsEnd = false
+        var paramsEnd = currentType == TokenType.EOF
+
+        while (!paramsEnd) {
+            if (!argsEnd) {
+                if (nextType == TokenType.ASSIGN) {  // treat this and all future params as kwargs
+                    argsEnd = true
+                    val name = currentToken
+                    ass(2)
+                    kwargs[name] = parseOnce()
+                } else {
+                    args += parseOnce()
+                }
+
+            } else {  // kwargs
+                val name = currentToken
+                if (nextType != TokenType.ASSIGN) throw SyntaxError("No assign symbol in between", currentStartPos, currentEndPos)
+                ass(2)
+                kwargs[name] = parseOnce()
+            }
+
+            if (nextType == TokenType.EOF) paramsEnd = true
+            else if (nextType != TokenType.COMMA) throw SyntaxError("No comma seperating arguments", currentStartPos, currentEndPos)
+            else ass(2)
+        }
+
+        return args to kwargs
     }
 
     private fun parseIf(): IfNode {
