@@ -22,13 +22,15 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     private fun interpret(node: BaseNode, ref: Referables): InterpretResult {
         node::class.simpleName ?: return InterpretResult(UnknownNodeError(node))
 
-        return InterpretResult(when (node) {
+        var obj = when (node) {
             is NumberNode -> interpretNumber(node)
             is StringNode -> StringObj(node.value, node.startPos, node.endPos)
             is BinOpNode -> interpretBinOp(node, ref)
             is UnaryOpNode -> interpretUnaryOp(node, ref)
             is IdenNode -> interpretIden(node, ref)
             is AssignNode -> interpretAssign(node, ref)
+            is ListNode -> interpretList(node, ref)
+            is DictNode -> interpretDict(node, ref)
             is BracketNode -> interpretBracket(node, ref)
             is NullNode -> NullObj(node.startPos, node.endPos)
             is IfNode -> interpretIf(node, ref)
@@ -37,8 +39,27 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             is FuncNode -> interpretFuncCreation(node, ref)
             is ClassNode -> interpretClassCreation(node, ref)
             is PropAccessNode -> interpretPropAccess(node, ref)
+
+            is ArgumentsNode -> throw NotYourFaultError("ArgumentsNode should not be interpreted", node.startPos, node.endPos)
             else -> throw UnknownNodeError(node)
-        })
+        }
+
+        if (node.call != null) {
+            val args = node.call!!.args
+            val kwargs = node.call!!.kwargs
+            val localRef = ref.bornChild()
+            val startPos = node.startPos
+            val endPos = node.endPos
+
+            obj = when (obj) {
+                is FuncObj -> interpretFunc(obj.node, args, kwargs, localRef, startPos, endPos)
+                is BuiltinFunc -> interpretBultinFunc(obj, args, kwargs, localRef, startPos, endPos)
+                is ClassObj -> interpretClass(obj.node, args, kwargs, localRef, startPos, endPos)
+                else -> throw TypeError("${obj::class.simpleName} is not callable", startPos, endPos)
+            }
+        }
+
+        return InterpretResult(obj)
     }
 
     private fun interpretNumber(node: NumberNode): BaseObject {
@@ -112,27 +133,31 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpretIden(node: IdenNode, ref: Referables): BaseObject {
-        val obj = ref.get(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos)
-        return if (node.withCall) makeCall(obj, node.args, node.kwargs, ref, node.startPos, node.endPos)
-        else obj
+        return ref.get(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos)
     }
 
-    private fun makeCall(obj: BaseObject, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): BaseObject {
-        val localRef = ref.bornChild()
-
-        return when (obj) {
-            is FuncObj -> interpretFunc(obj.node, args, kwargs, localRef, startPos, endPos)
-            is BuiltinFunc -> interpretBultinFunc(obj, args, kwargs, localRef, startPos, endPos)
-            is ClassObj -> interpretClass(obj.node, args, kwargs, localRef, startPos, endPos)
-            else -> throw TypeError("${obj::class.simpleName} is not callable", startPos, endPos)
-        }
-    }
 
     private fun interpretAssign(node: AssignNode, ref: Referables): BaseObject {
         val value = interpret(node.value, ref).obj
 
         ref.set(node.iden.name, value)
         return NullObj(node.startPos, node.endPos)
+    }
+
+    private fun interpretList(node: ListNode, ref: Referables): BaseObject {
+        val list = mutableListOf<BaseObject>()
+        for (item in node.nodes) {
+            list.add(interpret(item, ref).obj)
+        }
+        return ListObj(list, node.startPos, node.endPos)
+    }
+
+    private fun interpretDict(node: DictNode, ref: Referables): BaseObject {
+        val dict = mutableMapOf<BaseObject, BaseObject>()
+        for ((key, value) in node.dict) {
+            dict[StringObj(key.value, key.startPos, key.endPos)] = interpret(value, ref).obj
+        }
+        return DictObj(dict, node.startPos, node.endPos)
     }
 
     private fun interpretBracket(node: BracketNode, ref: Referables): BaseObject {
@@ -206,8 +231,9 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpretFuncCreation(node: FuncNode, ref: Referables): BaseObject {
-        ref.set(node.name.value, FuncObj(node))
-        return NullObj(node.startPos, node.endPos)
+        val obj = FuncObj(node)
+        ref.set(node.name.value, obj)
+        return obj
     }
 
     private fun interpretFunc(node: FuncNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): BaseObject {
@@ -222,8 +248,9 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpretClassCreation(node: ClassNode, ref: Referables): BaseObject {
-        ref.set(node.name.value, ClassObj(node))
-        return NullObj(node.startPos, node.endPos)
+        val obj = ClassObj(node)
+        ref.set(node.name.value, obj)
+        return obj
     }
 
     private fun interpretClass(node: ClassNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): BaseObject {
@@ -300,10 +327,9 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
 
     private fun interpretPropAccess(node: PropAccessNode, ref: Referables): BaseObject {
         val obj = interpret(node.parent, ref).obj
-        val prop = obj.property.getLocal(node.property.name)
+
+        return obj.property.getLocal(node.property.name)
             ?: obj.property.getLocal("that")?.property?.getLocal(node.property.name)  // class inheritance
             ?: throw AttributeError("Property \"${node.property.name}\" does not exist", node.startPos, node.endPos)
-
-        return if (node.property.withCall) makeCall(prop, node.property.args, node.property.kwargs, ref, node.startPos, node.endPos) else prop
     }
 }
