@@ -8,6 +8,6 @@ class NullNode: BaseNode {
     constructor(startPos: Position, endPos: Position): super(startPos, endPos)
 
     override fun toString(): String {
-        return "null"
+        return "null$callStr"
     }
 }
