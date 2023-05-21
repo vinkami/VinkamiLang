@@ -227,13 +227,20 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpretClass(node: ClassNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): BaseObject {
-        var refnew: Referables
-        setParams(node.initParams.map { convertParamNode(it, ref) }, args, kwargs, ref, startPos, endPos)
-            .let { refnew = it }
+        val thisRef = setParams(node.initParams.map { convertParamNode(it, ref) }, args, kwargs, ref, startPos, endPos)
+
+        // inheritance
+        node.parent?.let {
+            val parent = interpret(it, thisRef).obj
+            thisRef.set("that", parent)
+        }
+
         // set class methods, constants, etc. and does the init work
-        // TODO: inheritance
-        interpret(node.body, refnew)
-        return CustomObj(node.name.value, ref, node.startPos, node.endPos)
+        interpret(node.body, thisRef)
+        val thisObj = CustomObj(node.name.value, thisRef, node.startPos, node.endPos)
+        thisRef.set("this", thisObj)
+
+        return thisObj
     }
 
     private fun convertParamNode(node: ParamNode, ref: Referables): Parameter {
@@ -293,9 +300,10 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
 
     private fun interpretPropAccess(node: PropAccessNode, ref: Referables): BaseObject {
         val obj = interpret(node.parent, ref).obj
-        val prop = obj.property.getLocal(node.property.name) ?: throw AttributeError("Property \"${node.property.name}\" does not exist", node.startPos, node.endPos)
+        val prop = obj.property.getLocal(node.property.name)
+            ?: obj.property.getLocal("that")?.property?.getLocal(node.property.name)  // class inheritance
+            ?: throw AttributeError("Property \"${node.property.name}\" does not exist", node.startPos, node.endPos)
 
-        return if (node.property.withCall) makeCall(prop, node.property.args, node.property.kwargs, ref, node.startPos, node.endPos)
-        else prop
+        return if (node.property.withCall) makeCall(prop, node.property.args, node.property.kwargs, ref, node.startPos, node.endPos) else prop
     }
 }
