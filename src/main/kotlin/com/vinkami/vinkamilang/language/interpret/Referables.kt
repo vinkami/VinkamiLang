@@ -26,9 +26,9 @@ data class Referables(var stdout: ((String) -> Unit)? = null, private val variab
         return variables.containsKey(name) || parent?.contain(name) ?: false
     }
 
-    fun containLocal(name: String): Boolean {
-        return variables.containsKey(name)
-    }
+//    fun containLocal(name: String): Boolean {
+//        return variables.containsKey(name)
+//    }
 
     fun set(name: String, value: BaseObject): Referables {
         if (parent?.get(name) != null) {
