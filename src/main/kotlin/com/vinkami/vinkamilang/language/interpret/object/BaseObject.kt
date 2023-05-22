@@ -32,4 +32,5 @@ interface BaseObject {
 
     fun and(other: BaseObject): BaseObject = BoolObj(boolVal && other.boolVal, startPos, other.endPos)
     fun or(other: BaseObject): BaseObject = BoolObj(boolVal || other.boolVal, startPos, other.endPos)
+    fun not(): BaseObject = BoolObj(!boolVal, startPos, endPos)
 }
