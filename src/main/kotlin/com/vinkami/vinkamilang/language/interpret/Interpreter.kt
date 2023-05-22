@@ -117,17 +117,21 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
                 LESS -> left.less(right)
                 GREATER -> left.greater(right)
 
+                AND -> left.and(right)
+                OR -> left.or(right)
+
                 else -> throw UnknownNodeError(node)
             }
         }
     }
 
     private fun interpretUnaryOp(node: UnaryOpNode, ref: Referables): BaseObject {
-        val innerNode = interpret(node.innerNode, ref).obj
+        val innerObj = interpret(node.innerNode, ref).obj
 
         return when (node.op.type) {
-            PLUS -> innerNode.unaryPlus()
-            MINUS -> innerNode.unaryMinus()
+            PLUS -> innerObj.unaryPlus()
+            MINUS -> innerObj.unaryMinus()
+            NOT -> innerObj.not()
             else -> throw UnknownNodeError(node)
         }
     }
@@ -168,13 +172,13 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         val localRef = ref.bornChild()
 
         val cond = interpret(node.condition, localRef).obj
-        if (cond.boolVal()) {
+        if (cond.boolVal) {
             return interpret(node.action, localRef).obj
         }
 
         for ((elifCondNode, elifActionNode) in node.elif) {
             val elifCond = interpret(elifCondNode, localRef).obj
-            if (elifCond.boolVal()) {
+            if (elifCond.boolVal) {
                 return interpret(elifActionNode, localRef).obj
             }
         }
@@ -195,7 +199,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         if (node.loopTokenType == WHILE) {
             var cond = interpret(node.condition, ref).obj
 
-            while (cond.boolVal()) {
+            while (cond.boolVal) {
                 val res = interpret(node.mainAction, ref)
                 if (res.hasObject) finalObj = res.obj
                 if (res.interrupt != null) {
