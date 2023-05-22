@@ -105,16 +105,16 @@ class Parser(private val tokens: List<Token>) {
         return currentProcedure
     }
 
-    private fun parseExprOnce(): BaseNode { // Only expressions, not statements
-        return when (currentType) {
-            NUMBER -> NumberNode(currentToken)
-            IDENTIFIER -> parseIden()
-            STRING -> StringNode(currentToken)
-            PLUS, MINUS -> parseUnaryOp()
-            in Constant.bracket.keys -> parseBracket()
-            else -> throw SyntaxError("Unexpected token $currentType", currentStartPos, currentEndPos)
-        }
-    }
+//    private fun parseExprOnce(): BaseNode { // Only expressions, not statements
+//        return when (currentType) {
+//            NUMBER -> NumberNode(currentToken)
+//            IDENTIFIER -> parseIden()
+//            STRING -> StringNode(currentToken)
+//            PLUS, MINUS, NOT -> parseUnaryOp()
+//            in Constant.bracket.keys -> parseBracket()
+//            else -> throw SyntaxError("Unexpected token $currentType", currentStartPos, currentEndPos)
+//        }
+//    }
 
     /**
      * Binary Operations
@@ -164,7 +164,8 @@ class Parser(private val tokens: List<Token>) {
     private fun parseUnaryOp(): BaseNode {
         val op = currentToken
         ass()
-        val inner = parseExprOnce()
+        val inner = parseOnce()
+//        val inner = parseExprOnce()
         return processBinOp(0, UnaryOpNode(op, inner))  // unary node may be a part of math expression
     }
 
