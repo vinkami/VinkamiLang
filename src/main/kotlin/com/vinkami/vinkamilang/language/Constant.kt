@@ -29,7 +29,11 @@ internal object Constant {
         MODULO_ASSIGN, POWER_ASSIGN,
     )
 
-    val operators: List<TokenType> = arithmeticOp + comparitiveOp + difinitiveOp
+    val logicalOp: List<TokenType> = listOf(
+        AND, OR, NOT,
+    )
+
+    val binaryOps: List<TokenType> = arithmeticOp + comparitiveOp + difinitiveOp + logicalOp - listOf(NOT)
 
     val bracket: Map<TokenType, TokenType> = mapOf(
         L_PARAN to R_PARAN,
@@ -107,19 +111,21 @@ internal object Constant {
 
     val bindingPower: Map<TokenType, Pair<Int, Int>> = mapOf(
         // Used in Pratt parser
-        PLUS to Pair(4, 5), MINUS to Pair(4, 5),
-        MULTIPLY to Pair(6, 7), DIVIDE to Pair(6, 7),
-        MODULO to Pair(8, 9), POWER to Pair(10, 11),
+        PLUS to Pair(104, 105), MINUS to Pair(104, 105),
+        MULTIPLY to Pair(106, 107), DIVIDE to Pair(106, 107),
+        MODULO to Pair(108, 109), POWER to Pair(110, 111),
 
-        EQUAL to Pair(2, 3), NOT_EQUAL to Pair(2, 3),
-        LESS to Pair(2, 3), LESS_EQUAL to Pair(2, 3),
-        GREATER to Pair(2, 3), GREATER_EQUAL to Pair(2, 3),
+        EQUAL to Pair(52, 53), NOT_EQUAL to Pair(52, 53),
+        LESS to Pair(52, 53), LESS_EQUAL to Pair(52, 53),
+        GREATER to Pair(52, 53), GREATER_EQUAL to Pair(52, 53),
 
-        ASSIGN to Pair(100, 1),
-        PLUS_ASSIGN to Pair(100, 1), MINUS_ASSIGN to Pair(100, 1),
-        MULTIPLY_ASSIGN to Pair(100, 1), DIVIDE_ASSIGN to Pair(100, 1),
-        MODULO_ASSIGN to Pair(100, 1), POWER_ASSIGN to Pair(100, 1),
-        // increase the numbers by 1
+        AND to Pair(40, 41), OR to Pair(40, 41),
+
+        ASSIGN to Pair(150, 1),
+        PLUS_ASSIGN to Pair(150, 1), MINUS_ASSIGN to Pair(150, 1),
+        MULTIPLY_ASSIGN to Pair(150, 1), DIVIDE_ASSIGN to Pair(150, 1),
+        MODULO_ASSIGN to Pair(150, 1), POWER_ASSIGN to Pair(150, 1),
+
     )
 
     val conbinableTokens: Map<Pair<TokenType, TokenType>, Pair<TokenType, (Token, Token) -> String>> = mapOf(
