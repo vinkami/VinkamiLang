@@ -7,7 +7,8 @@ import kotlin.math.round
 class StringObj(override val value: String, override val startPos: Position, override val endPos: Position): BaseObject {
     override val type = "String"
     override val property = Referables(null, isRoot=false)
-    override fun boolVal() = value.isNotEmpty()
+    override val boolVal
+        get() = value.isNotEmpty()
     override fun toString() = value
 
     override fun plus(other: BaseObject): BaseObject {

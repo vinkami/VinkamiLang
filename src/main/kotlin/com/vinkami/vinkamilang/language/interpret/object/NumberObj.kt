@@ -7,7 +7,8 @@ import kotlin.math.pow
 class NumberObj(override val value: Float, override val startPos: Position, override val endPos: Position): BaseObject {
     override val type = "Number"
     override val property = Referables(null, isRoot=false)
-    override fun boolVal(): Boolean = value != 0f
+    override val boolVal
+        get() = value != 0f
 
     override fun toString(): String {
         return value.toString()

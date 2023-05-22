@@ -7,6 +7,7 @@ class ListObj(val elements: List<BaseObject>, override val startPos: Position, o
     override val type = "List"
     override val value = elements.joinToString(", ", "[", "]")
     override val property = Referables(null, isRoot=false)
-    override fun boolVal() = elements.isNotEmpty()
+    override val boolVal
+        get() = elements.isNotEmpty()
     override fun toString() = value
 }

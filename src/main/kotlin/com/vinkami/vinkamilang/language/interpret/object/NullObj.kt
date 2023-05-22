@@ -7,6 +7,6 @@ class NullObj(override val startPos: Position, override val endPos: Position): B
     override val type = "Null"
     override val value = "null"
     override val property = Referables(null, isRoot=false)
-    override fun boolVal() = false
+    override val boolVal = false
     override fun toString() = "null"
 }

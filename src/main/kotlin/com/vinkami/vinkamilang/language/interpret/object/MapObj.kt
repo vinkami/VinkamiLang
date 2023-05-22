@@ -7,6 +7,7 @@ class MapObj(val elements: Map<String, BaseObject>, override val startPos: Posit
     override val type = "Map"
     override val value = elements.entries.joinToString(", ", "{", "}") { "${it.key}: ${it.value}" }
     override val property = Referables(null, isRoot=false)
-    override fun boolVal() = elements.isNotEmpty()
+    override val boolVal
+        get() = elements.isNotEmpty()
     override fun toString() = value
 }
