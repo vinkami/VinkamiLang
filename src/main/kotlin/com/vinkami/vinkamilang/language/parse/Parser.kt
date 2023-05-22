@@ -71,7 +71,7 @@ class Parser(private val tokens: List<Token>) {
         var currentProcedure = when (currentType) {
             NUMBER, IDENTIFIER -> parseBinOp(0)
             STRING -> StringNode(currentToken)
-            PLUS, MINUS -> parseUnaryOp()
+            PLUS, MINUS, NOT -> parseUnaryOp()
             VAR -> parseAssign()
             in Constant.bracket.keys -> parseBracket()
             IF -> parseIf()
@@ -148,7 +148,7 @@ class Parser(private val tokens: List<Token>) {
 
         while (true) {
             val op = nextNonSpaceToken
-            if (op.type !in Constant.operators) break
+            if (op.type !in Constant.binaryOps) break
 
             val (leftBP, rightBP) = Constant.bindingPower[op.type]!!
             if (leftBP < minBP) break
