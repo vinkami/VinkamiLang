@@ -14,18 +14,22 @@ class NumberObj(override val value: Float, override val startPos: Position, over
         return value.toString()
     }
 
-    override  fun plus(other: BaseObject): BaseObject {
+    override fun plus(other: BaseObject): BaseObject {
         if (other is NumberObj) return NumberObj(value + other.value, startPos, other.endPos)
+        if (other is StringObj) return StringObj(value.toString() + other.value, startPos, other.endPos)
+        if (other is BoolObj) return NumberObj(value + other.intObj.value, startPos, other.endPos)
         return super.plus(other)
     }
 
-    override  fun minus(other: BaseObject): BaseObject {
+    override fun minus(other: BaseObject): BaseObject {
         if (other is NumberObj) return NumberObj(value - other.value, startPos, other.endPos)
+        if (other is BoolObj) return NumberObj(value - other.intObj.value, startPos, other.endPos)
         return super.minus(other)
     }
 
-    override  fun times(other: BaseObject): BaseObject {
+    override fun times(other: BaseObject): BaseObject {
         if (other is NumberObj) return NumberObj(value * other.value, startPos, other.endPos)
+        if (other is BoolObj) return NumberObj(value * other.intObj.value, startPos, other.endPos)
         return super.times(other)
     }
 
