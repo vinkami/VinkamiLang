@@ -2,6 +2,7 @@ package com.vinkami.vinkamilang.language.lex
 
 import com.vinkami.vinkamilang.language.Constant
 import com.vinkami.vinkamilang.language.Constant.contains
+import com.vinkami.vinkamilang.language.lex.TokenType.*
 
 
 class Token {
@@ -27,7 +28,7 @@ class Token {
     }
 
     override fun toString(): String {
-        return if (type in listOf(TokenType.NUMBER, TokenType.STRING, TokenType.IDENTIFIER)) {
+        return if (type in listOf(NUMBER, STRING, IDENTIFIER)) {
             "<$type: $value>"
         } else {
             "<$type>"
@@ -38,12 +39,12 @@ class Token {
         Constant.fixValuedTokenPair[section]?.let { return it to section }
 
         return when (section) {
-            in Regex("^[0-9.]+$") -> TokenType.NUMBER to section
-            in Regex("^[a-zA-Z_][a-zA-Z0-9_]*$") -> TokenType.IDENTIFIER to section
-            in Regex("^(?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')\$") -> TokenType.STRING to section.substring(1, section.length - 1)
-            in Regex("^ +$") -> TokenType.SPACE to section
-            in Regex("^[\r\n]+$") -> TokenType.LINEBREAK to section
-            else -> TokenType.UNKNOWN to section
+            in Regex("^[0-9.]+$") -> NUMBER to section
+            in Regex("^[a-zA-Z_][a-zA-Z0-9_]*$") -> IDENTIFIER to section
+            in Regex("^(?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')\$") -> STRING to section.substring(1, section.length - 1)
+            in Regex("^ +$") -> SPACE to section
+            in Regex("^[\r\n]+$") -> LINEBREAK to section
+            else -> UNKNOWN to section
         }
     }
 }

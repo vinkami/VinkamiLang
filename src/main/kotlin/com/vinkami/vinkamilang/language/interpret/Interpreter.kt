@@ -7,7 +7,7 @@ import com.vinkami.vinkamilang.language.interpret.`object`.*
 import com.vinkami.vinkamilang.language.interpret.`object`.function.Parameter
 import com.vinkami.vinkamilang.language.lex.Position
 import com.vinkami.vinkamilang.language.lex.Token
-import com.vinkami.vinkamilang.language.lex.TokenType
+import com.vinkami.vinkamilang.language.lex.TokenType.*
 import com.vinkami.vinkamilang.language.parse.node.*
 
 class Interpreter(private val globalNode: BaseNode, private val globalRef: Referables) {
@@ -82,13 +82,13 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
                 ref.get(name) ?: throw NameError("Unknown variable $name", node.left.startPos, node.left.endPos)
 
             when (node.op.type) {
-                TokenType.ASSIGN -> ref.set(name, value)
-                TokenType.PLUS_ASSIGN -> ref.set(name, ogValue.plus(value))
-                TokenType.MINUS_ASSIGN -> ref.set(name, ogValue.minus(value))
-                TokenType.MULTIPLY_ASSIGN -> ref.set(name, ogValue.times(value))
-                TokenType.DIVIDE_ASSIGN -> ref.set(name, ogValue.divide(value))
-                TokenType.MODULO_ASSIGN -> ref.set(name, ogValue.mod(value))
-                TokenType.POWER_ASSIGN -> ref.set(name, ogValue.power(value))
+                ASSIGN -> ref.set(name, value)
+                PLUS_ASSIGN -> ref.set(name, ogValue.plus(value))
+                MINUS_ASSIGN -> ref.set(name, ogValue.minus(value))
+                MULTIPLY_ASSIGN -> ref.set(name, ogValue.times(value))
+                DIVIDE_ASSIGN -> ref.set(name, ogValue.divide(value))
+                MODULO_ASSIGN -> ref.set(name, ogValue.mod(value))
+                POWER_ASSIGN -> ref.set(name, ogValue.power(value))
                 else -> throw NotYourFaultError(
                     "Invalid assignment operator ${node.op.type}",
                     node.op.startPos,
@@ -103,19 +103,19 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             val right = interpret(node.right, ref).obj
 
             return when (node.op.type) {
-                TokenType.PLUS -> left.plus(right)
-                TokenType.MINUS -> left.minus(right)
-                TokenType.MULTIPLY -> left.times(right)
-                TokenType.DIVIDE -> left.divide(right)
-                TokenType.MODULO -> left.mod(right)
-                TokenType.POWER -> left.power(right)
+                PLUS -> left.plus(right)
+                MINUS -> left.minus(right)
+                MULTIPLY -> left.times(right)
+                DIVIDE -> left.divide(right)
+                MODULO -> left.mod(right)
+                POWER -> left.power(right)
 
-                TokenType.EQUAL -> left.equal(right)
-                TokenType.NOT_EQUAL -> left.notEqual(right)
-                TokenType.LESS_EQUAL -> left.lessEqual(right)
-                TokenType.GREATER_EQUAL -> left.greaterEqual(right)
-                TokenType.LESS -> left.less(right)
-                TokenType.GREATER -> left.greater(right)
+                EQUAL -> left.equal(right)
+                NOT_EQUAL -> left.notEqual(right)
+                LESS_EQUAL -> left.lessEqual(right)
+                GREATER_EQUAL -> left.greaterEqual(right)
+                LESS -> left.less(right)
+                GREATER -> left.greater(right)
 
                 else -> throw UnknownNodeError(node)
             }
@@ -126,8 +126,8 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         val innerNode = interpret(node.innerNode, ref).obj
 
         return when (node.op.type) {
-            TokenType.PLUS -> innerNode.unaryPlus()
-            TokenType.MINUS -> innerNode.unaryMinus()
+            PLUS -> innerNode.unaryPlus()
+            MINUS -> innerNode.unaryMinus()
             else -> throw UnknownNodeError(node)
         }
     }
@@ -192,7 +192,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         var finalObj: BaseObject = NullObj(node.startPos, node.endPos)
 
         var complete = true
-        if (node.loopTokenType == TokenType.WHILE) {
+        if (node.loopTokenType == WHILE) {
             var cond = interpret(node.condition, ref).obj
 
             while (cond.boolVal()) {

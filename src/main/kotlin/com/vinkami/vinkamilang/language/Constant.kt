@@ -3,148 +3,150 @@ package com.vinkami.vinkamilang.language
 import com.vinkami.vinkamilang.language.lex.Position
 import com.vinkami.vinkamilang.language.lex.Token
 import com.vinkami.vinkamilang.language.lex.TokenType
+import com.vinkami.vinkamilang.language.lex.TokenType.*
 
 
 @Suppress("MemberVisibilityCanBePrivate")
 internal object Constant {
     val arithmeticOp: List<TokenType> = listOf(
-        TokenType.PLUS, TokenType.MINUS,
-        TokenType.MULTIPLY, TokenType.DIVIDE,
-        TokenType.MODULO,
-        TokenType.POWER,
+        PLUS, MINUS,
+        MULTIPLY, DIVIDE,
+        MODULO,
+        POWER,
     )
 
     val comparitiveOp: List<TokenType> = listOf(
-        TokenType.EQUAL, TokenType.NOT_EQUAL,
-        TokenType.LESS, TokenType.LESS_EQUAL,
-        TokenType.GREATER, TokenType.GREATER_EQUAL,
+        EQUAL, NOT_EQUAL,
+        LESS, LESS_EQUAL,
+        GREATER, GREATER_EQUAL,
     )
 
     val difinitiveOp: List<TokenType> = listOf(
-        TokenType.ASSIGN,
+        ASSIGN,
 //        TokenType.INCREMENT, TokenType.DECREMENT,
-        TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN,
-        TokenType.MULTIPLY_ASSIGN, TokenType.DIVIDE_ASSIGN,
-        TokenType.MODULO_ASSIGN, TokenType.POWER_ASSIGN,
+        PLUS_ASSIGN, MINUS_ASSIGN,
+        MULTIPLY_ASSIGN, DIVIDE_ASSIGN,
+        MODULO_ASSIGN, POWER_ASSIGN,
     )
 
     val operators: List<TokenType> = arithmeticOp + comparitiveOp + difinitiveOp
 
     val bracket: Map<TokenType, TokenType> = mapOf(
-        TokenType.L_PARAN to TokenType.R_PARAN,
-        TokenType.L_BRAC to TokenType.R_BRAC,
-        TokenType.L_BRACE to TokenType.R_BRACE,
+        L_PARAN to R_PARAN,
+        L_BRAC to R_BRAC,
+        L_BRACE to R_BRACE,
     )
 
     val fixValuedTokenPair: Map<String, TokenType> = mapOf(
         // Key char
-        "(" to TokenType.L_PARAN,
-        ")" to TokenType.R_PARAN,
-        "[" to TokenType.L_BRAC,
-        "]" to TokenType.R_BRAC,
-        "{" to TokenType.L_BRACE,
-        "}" to TokenType.R_BRACE,
-        "," to TokenType.COMMA,
-        "." to TokenType.DOT,
-        ":" to TokenType.COLON,
-        ";" to TokenType.SEMICOLON,
+        "(" to L_PARAN,
+        ")" to R_PARAN,
+        "[" to L_BRAC,
+        "]" to R_BRAC,
+        "{" to L_BRACE,
+        "}" to R_BRACE,
+        "," to COMMA,
+        "." to DOT,
+        ":" to COLON,
+        ";" to SEMICOLON,
 
         // Arithmetic operator
-        "+" to TokenType.PLUS,
-        "-" to TokenType.MINUS,
-        "*" to TokenType.MULTIPLY,
-        "/" to TokenType.DIVIDE,
-        "**" to TokenType.POWER,
-        "%" to TokenType.MODULO,
+        "+" to PLUS,
+        "-" to MINUS,
+        "*" to MULTIPLY,
+        "/" to DIVIDE,
+        "**" to POWER,
+        "%" to MODULO,
 
         // Comparative operator
-        "==" to TokenType.EQUAL,  // Combined from 2 ASSIGN
-        "!=" to TokenType.NOT_EQUAL,  // Combined from NOT and ASSIGN
-        "<" to TokenType.LESS,
-        ">" to TokenType.GREATER,
-        "<=" to TokenType.LESS_EQUAL,  // Combined from LESS and ASSIGN
-        ">=" to TokenType.GREATER_EQUAL,  // Combined from GREATER and ASSIGN
+        "==" to EQUAL,  // Combined from 2 ASSIGN
+        "!=" to NOT_EQUAL,  // Combined from NOT and ASSIGN
+        "<" to LESS,
+        ">" to GREATER,
+        "<=" to LESS_EQUAL,  // Combined from LESS and ASSIGN
+        ">=" to GREATER_EQUAL,  // Combined from GREATER and ASSIGN
 
         // Definitive operator
-        "=" to TokenType.ASSIGN,
-        "+=" to TokenType.PLUS_ASSIGN,  // Combined from PLUS and ASSIGN
-        "-=" to TokenType.MINUS_ASSIGN,  // Combined from MINUS and ASSIGN
-        "*=" to TokenType.MULTIPLY_ASSIGN,  // Combined from MULTIPLY and ASSIGN
-        "/=" to TokenType.DIVIDE_ASSIGN,  // Combined from DIVIDE and ASSIGN
-        "%=" to TokenType.MODULO_ASSIGN,  // Combined from MODULO and ASSIGN
-        "**=" to TokenType.POWER_ASSIGN,  // Combined from POWER and ASSIGN
+        "=" to ASSIGN,
+        "+=" to PLUS_ASSIGN,  // Combined from PLUS and ASSIGN
+        "-=" to MINUS_ASSIGN,  // Combined from MINUS and ASSIGN
+        "*=" to MULTIPLY_ASSIGN,  // Combined from MULTIPLY and ASSIGN
+        "/=" to DIVIDE_ASSIGN,  // Combined from DIVIDE and ASSIGN
+        "%=" to MODULO_ASSIGN,  // Combined from MODULO and ASSIGN
+        "**=" to POWER_ASSIGN,  // Combined from POWER and ASSIGN
 
         // Logic operator
-        "&" to TokenType.AND,
-        "|" to TokenType.OR,
-        "!" to TokenType.NOT,
+        "&" to AND,
+        "|" to OR,
+        "!" to NOT,
 
         // Keyword
-        "if" to TokenType.IF,
-        "elif" to TokenType.ELIF,
-        "else" to TokenType.ELSE,
-        "true" to TokenType.TRUE,
-        "false" to TokenType.FALSE,
+        "if" to IF,
+        "elif" to ELIF,
+        "else" to ELSE,
+        "true" to TRUE,
+        "false" to FALSE,
 
-        "for" to TokenType.FOR,
-        "while" to TokenType.WHILE,
-        "complete" to TokenType.COMPLETE,
-        "incomplete" to TokenType.INCOMPLETE,
-        "break" to TokenType.BREAK,
+        "for" to FOR,
+        "while" to WHILE,
+        "complete" to COMPLETE,
+        "incomplete" to INCOMPLETE,
+        "break" to BREAK,
 
-        "return" to TokenType.RETURN,
-        "fun" to TokenType.FUNC,
-        "class" to TokenType.CLASS,
+        "return" to RETURN,
+        "fun" to FUNC,
+        "class" to CLASS,
 
-        "var" to TokenType.VAR,
-        "is" to TokenType.IS,
-        "in" to TokenType.IN,
-        "import" to TokenType.IMPORT,
+        "var" to VAR,
+        "is" to IS,
+        "in" to IN,
+        "import" to IMPORT,
 
-        "EOF" to TokenType.EOF,
+        "EOF" to EOF,
     )
 
     val bindingPower: Map<TokenType, Pair<Int, Int>> = mapOf(
         // Used in Pratt parser
-        TokenType.PLUS to Pair(4, 5), TokenType.MINUS to Pair(4, 5),
-        TokenType.MULTIPLY to Pair(6, 7), TokenType.DIVIDE to Pair(6, 7),
-        TokenType.MODULO to Pair(8, 9), TokenType.POWER to Pair(10, 11),
+        PLUS to Pair(4, 5), MINUS to Pair(4, 5),
+        MULTIPLY to Pair(6, 7), DIVIDE to Pair(6, 7),
+        MODULO to Pair(8, 9), POWER to Pair(10, 11),
 
-        TokenType.EQUAL to Pair(2, 3), TokenType.NOT_EQUAL to Pair(2, 3),
-        TokenType.LESS to Pair(2, 3), TokenType.LESS_EQUAL to Pair(2, 3),
-        TokenType.GREATER to Pair(2, 3), TokenType.GREATER_EQUAL to Pair(2, 3),
+        EQUAL to Pair(2, 3), NOT_EQUAL to Pair(2, 3),
+        LESS to Pair(2, 3), LESS_EQUAL to Pair(2, 3),
+        GREATER to Pair(2, 3), GREATER_EQUAL to Pair(2, 3),
 
-        TokenType.ASSIGN to Pair(100, 1),
-        TokenType.PLUS_ASSIGN to Pair(100, 1), TokenType.MINUS_ASSIGN to Pair(100, 1),
-        TokenType.MULTIPLY_ASSIGN to Pair(100, 1), TokenType.DIVIDE_ASSIGN to Pair(100, 1),
-        TokenType.MODULO_ASSIGN to Pair(100, 1), TokenType.POWER_ASSIGN to Pair(100, 1),
+        ASSIGN to Pair(100, 1),
+        PLUS_ASSIGN to Pair(100, 1), MINUS_ASSIGN to Pair(100, 1),
+        MULTIPLY_ASSIGN to Pair(100, 1), DIVIDE_ASSIGN to Pair(100, 1),
+        MODULO_ASSIGN to Pair(100, 1), POWER_ASSIGN to Pair(100, 1),
+        // increase the numbers by 1
     )
 
     val conbinableTokens: Map<Pair<TokenType, TokenType>, Pair<TokenType, (Token, Token) -> String>> = mapOf(
 //        Pair(TokenType.PLUS, TokenType.PLUS) to Pair(TokenType.INCREMENT) { _, _ -> "++" },
-        Pair(TokenType.PLUS, TokenType.ASSIGN) to Pair(TokenType.PLUS_ASSIGN) { _, _ -> "+=" },
+        Pair(PLUS, ASSIGN) to Pair(PLUS_ASSIGN) { _, _ -> "+=" },
 
 //        Pair(TokenType.MINUS, TokenType.MINUS) to Pair(TokenType.DECREMENT) { _, _ -> "--" },
-        Pair(TokenType.MINUS, TokenType.ASSIGN) to Pair(TokenType.MINUS_ASSIGN) { _, _ -> "-=" },
+        Pair(MINUS, ASSIGN) to Pair(MINUS_ASSIGN) { _, _ -> "-=" },
 
-        Pair(TokenType.MULTIPLY, TokenType.MULTIPLY) to Pair(TokenType.POWER) { _, _ -> "**" },
-        Pair(TokenType.MULTIPLY, TokenType.ASSIGN) to Pair(TokenType.MULTIPLY_ASSIGN) { _, _ -> "*=" },
+        Pair(MULTIPLY, MULTIPLY) to Pair(POWER) { _, _ -> "**" },
+        Pair(MULTIPLY, ASSIGN) to Pair(MULTIPLY_ASSIGN) { _, _ -> "*=" },
 
-        Pair(TokenType.POWER, TokenType.ASSIGN) to Pair(TokenType.POWER_ASSIGN) { _, _ -> "**=" },
+        Pair(POWER, ASSIGN) to Pair(POWER_ASSIGN) { _, _ -> "**=" },
 
-        Pair(TokenType.MODULO, TokenType.ASSIGN) to Pair(TokenType.MODULO_ASSIGN) { _, _ -> "%=" },
+        Pair(MODULO, ASSIGN) to Pair(MODULO_ASSIGN) { _, _ -> "%=" },
 
-        Pair(TokenType.ASSIGN, TokenType.ASSIGN) to Pair(TokenType.EQUAL) {_, _ -> "==" },
-        Pair(TokenType.LESS, TokenType.ASSIGN) to Pair(TokenType.LESS_EQUAL) { _, _ -> "<=" },
-        Pair(TokenType.GREATER, TokenType.ASSIGN) to Pair(TokenType.GREATER_EQUAL) { _, _ -> ">=" },
-        Pair(TokenType.NOT, TokenType.ASSIGN) to Pair(TokenType.NOT_EQUAL) { _, _ -> "!=" },
+        Pair(ASSIGN, ASSIGN) to Pair(EQUAL) {_, _ -> "==" },
+        Pair(LESS, ASSIGN) to Pair(LESS_EQUAL) { _, _ -> "<=" },
+        Pair(GREATER, ASSIGN) to Pair(GREATER_EQUAL) { _, _ -> ">=" },
+        Pair(NOT, ASSIGN) to Pair(NOT_EQUAL) { _, _ -> "!=" },
 
-        Pair(TokenType.SPACE, TokenType.SPACE) to Pair(TokenType.SPACE) { t1, t2 -> t1.value + t2.value },
-        Pair(TokenType.LINEBREAK, TokenType.LINEBREAK) to Pair(TokenType.LINEBREAK) { t1, t2 -> t1.value + t2.value },
+        Pair(SPACE, SPACE) to Pair(SPACE) { t1, t2 -> t1.value + t2.value },
+        Pair(LINEBREAK, LINEBREAK) to Pair(LINEBREAK) { t1, t2 -> t1.value + t2.value },
     )
 
     val loopCompleteTT: List<TokenType> = listOf(
-        TokenType.COMPLETE, TokenType.INCOMPLETE
+        COMPLETE, INCOMPLETE
     )
 
     /**
