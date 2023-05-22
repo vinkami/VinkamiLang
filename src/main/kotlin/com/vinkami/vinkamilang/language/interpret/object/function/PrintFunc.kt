@@ -1,4 +1,4 @@
-package com.vinkami.vinkamilang.language.interpret.`object`.builtin
+package com.vinkami.vinkamilang.language.interpret.`object`.function
 
 import com.vinkami.vinkamilang.language.exception.NotYourFaultError
 import com.vinkami.vinkamilang.language.interpret.Referables

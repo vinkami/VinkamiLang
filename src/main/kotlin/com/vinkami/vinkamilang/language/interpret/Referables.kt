@@ -1,8 +1,8 @@
 package com.vinkami.vinkamilang.language.interpret
 
 import com.vinkami.vinkamilang.language.interpret.`object`.BaseObject
-import com.vinkami.vinkamilang.language.interpret.`object`.builtin.PrintFunc
-import com.vinkami.vinkamilang.language.interpret.`object`.builtin.TypeFunc
+import com.vinkami.vinkamilang.language.interpret.`object`.function.PrintFunc
+import com.vinkami.vinkamilang.language.interpret.`object`.function.TypeFunc
 
 data class Referables(var stdout: ((String) -> Unit)? = null, private val variables: MutableMap<String, BaseObject> = mutableMapOf(), private val isRoot: Boolean=true) {
     private var parent: Referables? = null

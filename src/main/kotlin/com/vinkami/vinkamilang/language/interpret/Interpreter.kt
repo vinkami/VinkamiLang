@@ -1,10 +1,10 @@
 package com.vinkami.vinkamilang.language.interpret
 
 import com.vinkami.vinkamilang.language.Constant
-import com.vinkami.vinkamilang.language.interpret.`object`.builtin.BuiltinFunc
+import com.vinkami.vinkamilang.language.interpret.`object`.function.BuiltinFunc
 import com.vinkami.vinkamilang.language.exception.*
 import com.vinkami.vinkamilang.language.interpret.`object`.*
-import com.vinkami.vinkamilang.language.interpret.`object`.builtin.Parameter
+import com.vinkami.vinkamilang.language.interpret.`object`.function.Parameter
 import com.vinkami.vinkamilang.language.lex.Position
 import com.vinkami.vinkamilang.language.lex.Token
 import com.vinkami.vinkamilang.language.lex.TokenType
