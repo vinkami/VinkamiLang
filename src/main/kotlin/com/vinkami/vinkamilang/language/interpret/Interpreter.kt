@@ -25,6 +25,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         var obj = when (node) {
             is NumberNode -> interpretNumber(node)
             is StringNode -> StringObj(node.value, node.startPos, node.endPos)
+            is BoolNode -> BoolObj(node.token.type == TRUE, node.startPos, node.endPos)
             is BinOpNode -> interpretBinOp(node, ref)
             is UnaryOpNode -> interpretUnaryOp(node, ref)
             is IdenNode -> interpretIden(node, ref)
