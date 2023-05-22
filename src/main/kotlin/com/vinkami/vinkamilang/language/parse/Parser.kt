@@ -69,7 +69,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseOnce(): BaseNode {
         var currentProcedure = when (currentType) {
-            NUMBER, IDENTIFIER -> parseBinOp(0)
+            NUMBER, IDENTIFIER, TRUE, FALSE -> parseBinOp(0)
             STRING -> StringNode(currentToken)
             PLUS, MINUS, NOT -> parseUnaryOp()
             VAR -> parseAssign()
@@ -130,6 +130,8 @@ class Parser(private val tokens: List<Token>) {
             L_PARAN -> parseBracket()
             NUMBER -> NumberNode(currentToken)
             IDENTIFIER -> parseIden()
+            TRUE, FALSE -> BoolNode(currentToken)
+            PLUS, MINUS, NOT -> parseUnaryOp()
             else -> throw SyntaxError("Unexpected token $currentType", currentStartPos, currentEndPos)
         }
 
@@ -214,12 +216,12 @@ class Parser(private val tokens: List<Token>) {
         val eof = Token(EOF, "EOF", endToken.startPos, endToken.endPos)
         val innerTokens = tokens.subList(start + 1, pos) + eof
 
-        if (innerTokens.isEmpty()) return BracketNode(startToken, NullNode(currentToken), endToken)
-
         return when (bracketTypeL) {
             L_PARAN -> {
                 if (start == 0 || tokens[start - 1].type in listOf(PLUS, MINUS, SPACE, LINEBREAK)) {  // parse as if it's a part of math expr
-                    val node = BracketNode(startToken, Parser(innerTokens).parse().node, endToken)
+                    val innerResult = Parser(innerTokens).parse()
+                    if (innerResult.hasError) throw innerResult.error
+                    val node = BracketNode(startToken, innerResult.node, endToken)
                     processBinOp(0, node)  // Try to continue parsing the bracket as a binop, return itself if not anyway
                 } else {  // parse as a list of arguments
                     val (args, kwargs) = Parser(innerTokens).generateArguments()
@@ -236,8 +238,9 @@ class Parser(private val tokens: List<Token>) {
             }
 
             L_BRACE -> {
-                val node = Parser(innerTokens).parse().node
-                BracketNode(startToken, node, endToken)
+                val innerResult = Parser(innerTokens).parse()
+                if (innerResult.hasError) throw innerResult.error
+                BracketNode(startToken, innerResult.node, endToken)
             }
 
             else -> throw NotYourFaultError("parseBracket() check got bypassed with illegal bracket type $bracketTypeL", currentStartPos, currentEndPos)
