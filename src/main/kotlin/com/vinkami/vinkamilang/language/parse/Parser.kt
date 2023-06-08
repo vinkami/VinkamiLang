@@ -46,25 +46,22 @@ class Parser(private val tokens: List<Token>) {
         return if (n == 1) Unit else ass(n-1)
     }
 
-    fun parse(): ParseResult {
-        val res = ParseResult()
+    fun parse(): BaseNode {
         val procedures = mutableListOf<BaseNode>()
         val startPos = currentStartPos
 
-        try {
-            skipSpace()
-            while (true) {
-                val procedure = parseOnce()
-                if (procedure is ArgumentsNode) throw SyntaxError("Nothing to be called", procedure.startPos, procedure.endPos)
-                else procedures += procedure
-                if (currentType == EOF) break
-                ass()
-            }
-        } catch (e: BaseError) { return res(e) }
+        skipSpace()
+        while (true) {
+            val procedure = parseOnce()
+            if (procedure is ArgumentsNode) throw SyntaxError("Nothing to be called", procedure.startPos, procedure.endPos)
+            else procedures += procedure
+            if (currentType == EOF) break
+            ass()
+        }
         val endPos = currentEndPos
 
-        if (procedures.size == 1 || procedures.size == 2) return res(procedures[0])  // 1: Only NullNode from EOF; 2: Only one procedure
-        return res(ProcedureNode(procedures, startPos, endPos))
+        if (procedures.size == 1 || procedures.size == 2) return procedures[0]  // 1: Only NullNode from EOF; 2: Only one procedure
+        return ProcedureNode(procedures, startPos, endPos)
     }
 
     private fun parseOnce(): BaseNode {
@@ -72,14 +69,14 @@ class Parser(private val tokens: List<Token>) {
             NUMBER, IDENTIFIER, TRUE, FALSE -> parseBinOp(0)
             STRING -> StringNode(currentToken)
             PLUS, MINUS, NOT -> parseUnaryOp()
-            VAR -> parseAssign()
+            VAR, VAL -> parseAssign()
             in Constant.bracket.keys -> parseBracket()
             IF -> parseIf()
             WHILE, FOR -> parseLoop()
+            BREAK -> parseInterrupt()
             FUNC -> parseFuncDef()
             CLASS -> parseClass()
             EOF -> NullNode(currentToken)
-            UNKNOWN -> throw IllegalCharError(currentToken)
             else -> throw SyntaxError("Unexpected token $currentType", currentStartPos, currentEndPos)
         }
 
@@ -176,19 +173,20 @@ class Parser(private val tokens: List<Token>) {
     private fun parseAssign(): AssignNode {
         val startPos = currentStartPos
 
-        ass()  // skip var token
+        val mutable = currentType == VAR
+        ass()
+
         if (currentType != IDENTIFIER) throw SyntaxError("Expected identifier after var", currentStartPos, currentEndPos)
         val iden = parseIden()
         ass()
 
-        if (currentType !in Constant.difinitiveOp) throw SyntaxError("Expected assignment operator after identifier", currentStartPos, currentEndPos)
-        val assignToken = currentToken
+        if (currentType != ASSIGN) throw SyntaxError("Expected assignment operator after identifier", currentStartPos, currentEndPos)
         ass()
 
         if (currentType in listOf(EOF, LINEBREAK)) throw SyntaxError("Unexpected end of line", currentStartPos, currentEndPos)
         val value = parseOnce()
 
-        return AssignNode(iden, assignToken, value, startPos)
+        return AssignNode(iden, value, mutable, startPos)
     }
 
     private fun parseBracket(): BaseNode {
@@ -220,8 +218,7 @@ class Parser(private val tokens: List<Token>) {
             L_PARAN -> {
                 if (start == 0 || tokens[start - 1].type in listOf(PLUS, MINUS, SPACE, LINEBREAK)) {  // parse as if it's a part of math expr
                     val innerResult = Parser(innerTokens).parse()
-                    if (innerResult.hasError) throw innerResult.error
-                    val node = BracketNode(startToken, innerResult.node, endToken)
+                    val node = BracketNode(startToken, innerResult, endToken)
                     processBinOp(0, node)  // Try to continue parsing the bracket as a binop, return itself if not anyway
                 } else {  // parse as a list of arguments
                     val (args, kwargs) = Parser(innerTokens).generateArguments()
@@ -239,8 +236,7 @@ class Parser(private val tokens: List<Token>) {
 
             L_BRACE -> {
                 val innerResult = Parser(innerTokens).parse()
-                if (innerResult.hasError) throw innerResult.error
-                BracketNode(startToken, innerResult.node, endToken)
+                BracketNode(startToken, innerResult, endToken)
             }
 
             else -> throw NotYourFaultError("parseBracket() check got bypassed with illegal bracket type $bracketTypeL", currentStartPos, currentEndPos)
@@ -338,6 +334,16 @@ class Parser(private val tokens: List<Token>) {
         }
 
         return LoopNode(loopTT, condition, mainAction, compAction, incompAction, startPos, endPos)
+    }
+
+    private fun parseInterrupt(): InterruptNode {
+        val startPos = currentStartPos
+        val type = currentType
+        advance()
+        while (currentType == SPACE) advance()
+
+        val node = if (currentType == LINEBREAK) NullNode(currentToken) else parseOnce()
+        return InterruptNode(node, type, startPos)
     }
 
     private fun parseFuncDef(): FuncNode {
