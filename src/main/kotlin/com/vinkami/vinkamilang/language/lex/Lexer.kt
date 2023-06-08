@@ -45,7 +45,7 @@ class Lexer(private val text: String, fileName: String) {
 
         // EOF token
         advance()
-        tokens += Token("EOF", pos.copy(), pos.copy())
+        tokens += Token(TokenType.EOF, "", pos.copy(), pos.copy())
 
         return combineTokens(tokens)  // Combine tokens like >= and ++
     }
