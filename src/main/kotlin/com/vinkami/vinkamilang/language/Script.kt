@@ -4,6 +4,7 @@ import com.vinkami.vinkamilang.PathFinder
 import com.vinkami.vinkamilang.language.exception.BaseError
 import com.vinkami.vinkamilang.language.interpret.Interpreter
 import com.vinkami.vinkamilang.language.interpret.Referables
+import com.vinkami.vinkamilang.language.interpret.`object`.BaseObject
 import com.vinkami.vinkamilang.language.lex.Lexer
 import com.vinkami.vinkamilang.language.lex.Token
 import com.vinkami.vinkamilang.language.parse.Parser
@@ -13,11 +14,8 @@ import java.io.File
 class Script {
     val code: String
     val name: String
-    val hasError get() = ::error.isInitialized
 
-    lateinit var tokens: List<Token>
-    lateinit var node: BaseNode
-    lateinit var error: BaseError
+    var error: BaseError? = null
 
     constructor(file: File, pf: PathFinder) {
         this.name = file.relativeTo(pf.scriptFolder)
@@ -36,28 +34,30 @@ class Script {
         return "<Script $name>"
     }
 
-    fun run(ref: Referables): String? {
-        lex()
-        parse()
-        if (hasError) return error.toString()
-        if (!::node.isInitialized) return "NotYourFaultError: No node found"
-        interpret(ref)
-        if (hasError) return error.toString()
+    fun lex(): List<Token>? {
+        try {
+            return Lexer(code, name).tokenize()
+        } catch (e: BaseError) {
+            error = e
+        }
         return null
     }
 
-    fun lex() = apply {
-        tokens = Lexer(code, name).tokenize()
+    fun parse(): BaseNode? {
+        try {
+            val tokens = lex() ?: return null
+            return Parser(tokens).parse()
+        } catch (e: BaseError) {
+            error = e
+        }
+        return null
     }
 
-    fun parse() = apply {
-        val result = Parser(tokens).parse()
-        if (result.hasError) this.error = result.error
-        if (result.hasNode) this.node = result.node
-    }
-
-    fun interpret(ref: Referables) = apply {
+    fun interpret(ref: Referables): BaseObject? {
+        val node = parse() ?: return null
         val result = Interpreter(node, ref).interpret()
-        if (result.hasError) this.error = result.error
+        if (result.hasError) error = result.error
+        else return result.obj
+        return null
     }
 }
