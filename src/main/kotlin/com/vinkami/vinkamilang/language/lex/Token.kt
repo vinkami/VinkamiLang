@@ -2,6 +2,7 @@ package com.vinkami.vinkamilang.language.lex
 
 import com.vinkami.vinkamilang.language.Constant
 import com.vinkami.vinkamilang.language.Constant.contains
+import com.vinkami.vinkamilang.language.exception.IllegalCharError
 import com.vinkami.vinkamilang.language.lex.TokenType.*
 
 
@@ -12,12 +13,12 @@ class Token {
     var endPos: Position
 
     constructor(section: String, startPos: Position, endPos: Position) {
-        val pair = determineTokenPair(section)
-
-        this.type = pair.first
-        this.value = pair.second
         this.startPos = startPos
         this.endPos = endPos
+
+        val pair = determineTokenPair(section)
+        this.type = pair.first
+        this.value = pair.second
     }
 
     constructor(TT: TokenType, value: String, startPos: Position, endPos: Position) {
@@ -44,7 +45,7 @@ class Token {
             in Regex("^(?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')\$") -> STRING to section.substring(1, section.length - 1)
             in Regex("^ +$") -> SPACE to section
             in Regex("^[\r\n]+$") -> LINEBREAK to section
-            else -> UNKNOWN to section
+            else -> throw IllegalCharError(section, startPos, endPos)
         }
     }
 }
