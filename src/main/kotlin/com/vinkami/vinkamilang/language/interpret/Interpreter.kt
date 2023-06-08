@@ -20,6 +20,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpret(node: BaseNode, ref: Referables): InterpretResult {
+        val res = InterpretResult()
         node::class.simpleName ?: return InterpretResult(UnknownNodeError(node))
 
         var obj = when (node) {
@@ -36,6 +37,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             is NullNode -> NullObj(node.startPos, node.endPos)
             is IfNode -> interpretIf(node, ref)
             is LoopNode -> interpretLoop(node, ref)
+            is InterruptNode -> {res.interrupt = node.type; interpret(node.innerNode, ref).obj}
             is ProcedureNode -> interpretProcedural(node, ref)
             is FuncNode -> interpretFuncCreation(node, ref)
             is ClassNode -> interpretClassCreation(node, ref)
@@ -60,7 +62,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             }
         }
 
-        return InterpretResult(obj)
+        return res(obj)
     }
 
     private fun interpretNumber(node: NumberNode): BaseObject {
@@ -83,13 +85,13 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
                 ref.get(name) ?: throw NameError("Unknown variable $name", node.left.startPos, node.left.endPos)
 
             when (node.op.type) {
-                ASSIGN -> ref.set(name, value)
-                PLUS_ASSIGN -> ref.set(name, ogValue.plus(value))
-                MINUS_ASSIGN -> ref.set(name, ogValue.minus(value))
-                MULTIPLY_ASSIGN -> ref.set(name, ogValue.times(value))
-                DIVIDE_ASSIGN -> ref.set(name, ogValue.divide(value))
-                MODULO_ASSIGN -> ref.set(name, ogValue.mod(value))
-                POWER_ASSIGN -> ref.set(name, ogValue.power(value))
+                ASSIGN -> ref.reassign(name, value)
+                PLUS_ASSIGN -> ref.reassign(name, ogValue.plus(value))
+                MINUS_ASSIGN -> ref.reassign(name, ogValue.minus(value))
+                MULTIPLY_ASSIGN -> ref.reassign(name, ogValue.times(value))
+                DIVIDE_ASSIGN -> ref.reassign(name, ogValue.divide(value))
+                MODULO_ASSIGN -> ref.reassign(name, ogValue.mod(value))
+                POWER_ASSIGN -> ref.reassign(name, ogValue.power(value))
                 else -> throw NotYourFaultError(
                     "Invalid assignment operator ${node.op.type}",
                     node.op.startPos,
@@ -141,11 +143,10 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         return ref.get(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos)
     }
 
-
     private fun interpretAssign(node: AssignNode, ref: Referables): BaseObject {
         val value = interpret(node.value, ref).obj
 
-        ref.set(node.iden.name, value)
+        ref.set(node.iden.name, value, node.mutable)
         return NullObj(node.startPos, node.endPos)
     }
 
@@ -202,11 +203,14 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
 
             while (cond.boolVal) {
                 val res = interpret(node.mainAction, ref)
-                if (res.hasObject) finalObj = res.obj
-                if (res.interrupt != null) {
+                if (res.interrupt == BREAK) {
                     complete = false
                     break
                 }
+                if (res.interrupt == RETURN) {
+                    TODO("Add return / break / continue handling")
+                }
+                finalObj = res.obj
                 cond = interpret(node.condition, ref).obj
             }
 
@@ -228,8 +232,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             val res = interpret(procedure, ref)
 
             if (res.interrupt != null) {
-                res.clearInterrupt()
-                break
+                break  // TODO: Add return / break / continue handling
             }
         }
         return NullObj(node.startPos, node.endPos)
@@ -237,7 +240,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
 
     private fun interpretFuncCreation(node: FuncNode, ref: Referables): BaseObject {
         val obj = FuncObj(node)
-        ref.set(node.name.value, obj)
+        ref.set(node.name.value, obj, false)
         return obj
     }
 
@@ -254,7 +257,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
 
     private fun interpretClassCreation(node: ClassNode, ref: Referables): BaseObject {
         val obj = ClassObj(node)
-        ref.set(node.name.value, obj)
+        ref.set(node.name.value, obj, false)
         return obj
     }
 
@@ -264,13 +267,13 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         // inheritance
         node.parent?.let {
             val parent = interpret(it, thisRef).obj
-            thisRef.set("that", parent)
+            thisRef.set("that", parent, false)
         }
 
         // set class methods, constants, etc. and does the init work
         interpret(node.body, thisRef)
         val thisObj = CustomObj(node.name.value, thisRef, node.startPos, node.endPos)
-        thisRef.set("this", thisObj)
+        thisRef.set("this", thisObj, false)
 
         return thisObj
     }
@@ -293,37 +296,37 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             val varArgsIndex = params.indexOf(varArg)
 
             // first part of arguments
-            args.subList(0, varArgsIndex).forEachIndexed { i, it ->  ref.set(params[i].name, interpret(it, ref).obj) }
+            args.subList(0, varArgsIndex).forEachIndexed { i, it ->  ref.set(params[i].name, interpret(it, ref).obj, false) }
 
             // variable arguments
             val argvEnd = args.size - argParamNumber + varArgsIndex
             val argv = args.subList(varArgsIndex, argvEnd).map { interpret(it, ref).obj }
-            ref.set(varArg.name, ListObj(argv, startPos, endPos))
+            ref.set(varArg.name, ListObj(argv, startPos, endPos), false)
 
             // last part of arguments
-            args.subList(argvEnd, args.size).forEachIndexed { i, it ->  ref.set(params[i + varArgsIndex + 1].name, interpret(it, ref).obj) }
+            args.subList(argvEnd, args.size).forEachIndexed { i, it ->  ref.set(params[i + varArgsIndex + 1].name, interpret(it, ref).obj, false) }
         } else {
             if (args.size > params.size) throw TypeError("Too many arguments", startPos, endPos)
-            args.forEachIndexed { i, it ->  ref.set(params[i].name, interpret(it, ref).obj)}
+            args.forEachIndexed { i, it ->  ref.set(params[i].name, interpret(it, ref).obj, false)}
         }
 
         // keyword arguments
         if (varKwarg != null) {
             // normal keyword arguments
-            kwargs.filter { it.key.value in params.map { param -> param.name } - varKwarg.name }.forEach { ref.set(it.key.value, interpret(it.value, ref).obj) }
+            kwargs.filter { it.key.value in params.map { param -> param.name } - varKwarg.name }.forEach { ref.set(it.key.value, interpret(it.value, ref).obj, false) }
 
             // variable kw arguments
             val kwargMap = mutableMapOf<String, BaseObject>()
             kwargs.filter { it.key.value !in params.map { param -> param.name } - varKwarg.name }.forEach { kwargMap[it.key.value] = interpret(it.value, ref).obj }
-            ref.set(varKwarg.name, MapObj(kwargMap, startPos, endPos))
+            ref.set(varKwarg.name, MapObj(kwargMap, startPos, endPos), false)
         } else {
-            kwargs.forEach { ref.set(it.key.value, interpret(it.value, ref).obj) }
+            kwargs.forEach { ref.set(it.key.value, interpret(it.value, ref).obj, false) }
         }
 
         // check for any missing
         for (param in params) {
             if (ref.contain(param.name)) continue
-            if (param.default != null) ref.set(param.name, param.default)
+            if (param.default != null) ref.set(param.name, param.default, false)
             else throw TypeError("Missing argument: ${param.name}", startPos, endPos)
         }
 
