@@ -96,17 +96,17 @@ internal object Constant {
         "complete" to COMPLETE,
         "incomplete" to INCOMPLETE,
         "break" to BREAK,
+        "continue" to CONTINUE,
 
         "return" to RETURN,
         "fun" to FUNC,
         "class" to CLASS,
 
         "var" to VAR,
+        "val" to VAL,
         "is" to IS,
         "in" to IN,
-        "import" to IMPORT,
-
-        "EOF" to EOF,
+        "import" to IMPORT
     )
 
     val bindingPower: Map<TokenType, Pair<Int, Int>> = mapOf(
