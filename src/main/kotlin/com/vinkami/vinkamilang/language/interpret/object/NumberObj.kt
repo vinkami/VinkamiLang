@@ -15,39 +15,39 @@ class NumberObj(override val value: Float, override val startPos: Position, over
     }
 
     override fun plus(other: BaseObject): BaseObject {
-        if (other is NumberObj) return NumberObj(value + other.value, startPos, other.endPos)
-        if (other is StringObj) return StringObj(value.toString() + other.value, startPos, other.endPos)
-        if (other is BoolObj) return NumberObj(value + other.intObj.value, startPos, other.endPos)
+        if (other is NumberObj) return NumberObj(value + other.value, other.startPos, other.endPos)
+        if (other is StringObj) return StringObj(value.toString() + other.value, other.startPos, other.endPos)
+        if (other is BoolObj) return NumberObj(value + other.intObj.value, other.startPos, other.endPos)
         return super.plus(other)
     }
 
     override fun minus(other: BaseObject): BaseObject {
-        if (other is NumberObj) return NumberObj(value - other.value, startPos, other.endPos)
-        if (other is BoolObj) return NumberObj(value - other.intObj.value, startPos, other.endPos)
+        if (other is NumberObj) return NumberObj(value - other.value, other.startPos, other.endPos)
+        if (other is BoolObj) return NumberObj(value - other.intObj.value, other.startPos, other.endPos)
         return super.minus(other)
     }
 
     override fun times(other: BaseObject): BaseObject {
-        if (other is NumberObj) return NumberObj(value * other.value, startPos, other.endPos)
-        if (other is BoolObj) return NumberObj(value * other.intObj.value, startPos, other.endPos)
+        if (other is NumberObj) return NumberObj(value * other.value, other.startPos, other.endPos)
+        if (other is BoolObj) return NumberObj(value * other.intObj.value, other.startPos, other.endPos)
         return super.times(other)
     }
 
     override fun divide(other: BaseObject): BaseObject {
-        if (other is NumberObj) return NumberObj(value / other.value, startPos, other.endPos)
+        if (other is NumberObj) return NumberObj(value / other.value, other.startPos, other.endPos)
         return super.divide(other)
     }
 
     override fun power(other: BaseObject): BaseObject {
-        if (other is NumberObj) return NumberObj(value.pow(other.value), startPos, other.endPos)
+        if (other is NumberObj) return NumberObj(value.pow(other.value), other.startPos, other.endPos)
         return super.power(other)
     }
 
-    override  fun unaryPlus(): BaseObject {
+    override fun unaryPlus(): BaseObject {
         return NumberObj(+value, startPos, endPos)
     }
 
-    override  fun unaryMinus(): BaseObject {
+    override fun unaryMinus(): BaseObject {
         return NumberObj(-value, startPos, endPos)
     }
 
