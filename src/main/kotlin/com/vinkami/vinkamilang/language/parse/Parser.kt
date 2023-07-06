@@ -73,18 +73,25 @@ class Parser(private val tokens: List<Token>) {
             in Constant.bracket.keys -> parseBracket()
             IF -> parseIf()
             WHILE, FOR -> parseLoop()
-            BREAK -> parseInterrupt()
+            BREAK, RETURN -> parseInterrupt()
             FUNC -> parseFuncDef()
             CLASS -> parseClass()
             EOF -> NullNode(currentToken)
             else -> throw SyntaxError("Unexpected token $currentType", currentStartPos, currentEndPos)
         }
 
+        currentProcedure = checkCallGet(currentProcedure)
+
+        return currentProcedure
+    }
+
+    private fun checkCallGet(uncheckedNode: BaseNode): BaseNode {
+        var node = uncheckedNode
         while (true) {
             if (pos == tokens.size - 1) break
             if (tokens[pos+1].type == DOT) { // gets property
                 advance()
-                currentProcedure = parseProp(currentProcedure)
+                node = parseProp(node)
             }
             else if (tokens[pos+1].type == L_PARAN) {  // makes call
                 val cpos = pos
@@ -94,24 +101,12 @@ class Parser(private val tokens: List<Token>) {
                     pos = cpos
                     break
                 }
-                currentProcedure.call = arguments
+                node.call = arguments
             }
             else break
         }
-
-        return currentProcedure
+        return node
     }
-
-//    private fun parseExprOnce(): BaseNode { // Only expressions, not statements
-//        return when (currentType) {
-//            NUMBER -> NumberNode(currentToken)
-//            IDENTIFIER -> parseIden()
-//            STRING -> StringNode(currentToken)
-//            PLUS, MINUS, NOT -> parseUnaryOp()
-//            in Constant.bracket.keys -> parseBracket()
-//            else -> throw SyntaxError("Unexpected token $currentType", currentStartPos, currentEndPos)
-//        }
-//    }
 
     /**
      * Binary Operations
@@ -123,7 +118,7 @@ class Parser(private val tokens: List<Token>) {
         if (minBP != 0) advance()
         skipSpace()
 
-        val lhs: BaseNode = when (currentType) {
+        var lhs: BaseNode = when (currentType) {
             L_PARAN -> parseBracket()
             NUMBER -> NumberNode(currentToken)
             IDENTIFIER -> parseIden()
@@ -131,6 +126,8 @@ class Parser(private val tokens: List<Token>) {
             PLUS, MINUS, NOT -> parseUnaryOp()
             else -> throw SyntaxError("Unexpected token $currentType", currentStartPos, currentEndPos)
         }
+
+        lhs = checkCallGet(lhs)
 
         return processBinOp(minBP, lhs)
     }
@@ -153,7 +150,7 @@ class Parser(private val tokens: List<Token>) {
             if (leftBP < minBP) break
             ass()
 
-            val rhs = parseBinOp(rightBP)
+            val rhs = checkCallGet(parseBinOp(rightBP))
             lhs = BinOpNode(lhs, op, rhs)
         }
 
