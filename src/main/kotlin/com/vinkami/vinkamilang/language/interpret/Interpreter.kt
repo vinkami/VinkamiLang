@@ -20,13 +20,12 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpret(node: BaseNode, ref: Referables): InterpretResult {
-        val res = InterpretResult()
         node::class.simpleName ?: return InterpretResult(UnknownNodeError(node))
 
-        var obj = when (node) {
+        var res: InterpretResult = when (node) {
             is NumberNode -> interpretNumber(node)
-            is StringNode -> StringObj(node.value, node.startPos, node.endPos)
-            is BoolNode -> BoolObj(node.token.type == TRUE, node.startPos, node.endPos)
+            is StringNode -> InterpretResult(StringObj(node.value, node.startPos, node.endPos))
+            is BoolNode -> InterpretResult(BoolObj(node.token.type == TRUE, node.startPos, node.endPos))
             is BinOpNode -> interpretBinOp(node, ref)
             is UnaryOpNode -> interpretUnaryOp(node, ref)
             is IdenNode -> interpretIden(node, ref)
@@ -34,10 +33,10 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             is ListNode -> interpretList(node, ref)
             is DictNode -> interpretDict(node, ref)
             is BracketNode -> interpretBracket(node, ref)
-            is NullNode -> NullObj(node.startPos, node.endPos)
+            is NullNode -> InterpretResult(NullObj(node.startPos, node.endPos))
             is IfNode -> interpretIf(node, ref)
             is LoopNode -> interpretLoop(node, ref)
-            is InterruptNode -> {res.interrupt = node.type; interpret(node.innerNode, ref).obj}
+            is InterruptNode -> interpretInterrupt(node, ref)
             is ProcedureNode -> interpretProcedural(node, ref)
             is FuncNode -> interpretFuncCreation(node, ref)
             is ClassNode -> interpretClassCreation(node, ref)
@@ -54,33 +53,40 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             val startPos = node.startPos
             val endPos = node.endPos
 
-            obj = when (obj) {
-                is FuncObj -> interpretFunc(obj.node, args, kwargs, localRef, startPos, endPos)
-                is BuiltinFunc -> interpretBultinFunc(obj, args, kwargs, localRef, startPos, endPos)
-                is ClassObj -> interpretClass(obj.node, args, kwargs, localRef, startPos, endPos)
-                else -> throw TypeError("${obj::class.simpleName} is not callable", startPos, endPos)
+            res = when (res.obj) {
+                is FuncObj -> interpretFunc((res.obj as FuncObj).node, args, kwargs, localRef, startPos, endPos)
+                is BuiltinFunc -> interpretBultinFunc(res.obj as BuiltinFunc, args, kwargs, localRef, startPos, endPos)
+                is ClassObj -> interpretClass((res.obj as ClassObj).node, args, kwargs, localRef, startPos, endPos)
+                else -> throw TypeError("${res.obj::class.simpleName} is not callable", startPos, endPos)
             }
         }
 
+        return res
+    }
+
+    private fun interpretInterrupt(node: InterruptNode, ref: Referables): InterpretResult {
+        val res = InterpretResult()
+        res.interrupt = node.type
+        val obj = interpret(node.innerNode, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
         return res(obj)
     }
 
-    private fun interpretNumber(node: NumberNode): BaseObject {
+    private fun interpretNumber(node: NumberNode): InterpretResult {
         val valueString = node.value
         try {
             val value = valueString.toFloat()
-            return NumberObj(value, node.startPos, node.endPos)
+            return InterpretResult(NumberObj(value, node.startPos, node.endPos))
         } catch (e: NumberFormatException) {
             throw SyntaxError("Invalid number: $valueString", node.startPos, node.endPos)
         }
     }
 
-    private fun interpretBinOp(node: BinOpNode, ref: Referables): BaseObject {
+    private fun interpretBinOp(node: BinOpNode, ref: Referables): InterpretResult {
         if (node.op.type in Constant.difinitiveOp) {
             // Variable assignment
             if (node.left !is IdenNode) throw SyntaxError("Invalid assignment", node.startPos, node.endPos)
             val name = node.left.name
-            val value = interpret(node.right, ref).obj
+            val value = interpret(node.right, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
             val ogValue =
                 ref.get(name) ?: throw NameError("Unknown variable $name", node.left.startPos, node.left.endPos)
 
@@ -98,14 +104,14 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
                     node.op.endPos
                 )  // No other TT are allowed from parser
             }
-            return NullObj(node.startPos, node.endPos)
+            return InterpretResult(NullObj(node.startPos, node.endPos))
 
         } else {
             // Normal caluclation
-            val left = interpret(node.left, ref).obj
-            val right = interpret(node.right, ref).obj
+            val left = interpret(node.left, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+            val right = interpret(node.right, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
 
-            return when (node.op.type) {
+            val obj = when (node.op.type) {
                 PLUS -> left.plus(right)
                 MINUS -> left.minus(right)
                 MULTIPLY -> left.times(right)
@@ -125,81 +131,85 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
 
                 else -> throw UnknownNodeError(node)
             }
+
+            return InterpretResult(obj)
         }
     }
 
-    private fun interpretUnaryOp(node: UnaryOpNode, ref: Referables): BaseObject {
-        val innerObj = interpret(node.innerNode, ref).obj
+    private fun interpretUnaryOp(node: UnaryOpNode, ref: Referables): InterpretResult {
+        val innerObj = interpret(node.innerNode, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
 
-        return when (node.op.type) {
+        val obj =  when (node.op.type) {
             PLUS -> innerObj.unaryPlus()
             MINUS -> innerObj.unaryMinus()
             NOT -> innerObj.not()
             else -> throw UnknownNodeError(node)
         }
+
+        return InterpretResult(obj)
     }
 
-    private fun interpretIden(node: IdenNode, ref: Referables): BaseObject {
-        return ref.get(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos)
+    private fun interpretIden(node: IdenNode, ref: Referables): InterpretResult {
+        return InterpretResult(ref.get(node.name) ?: throw NameError("Undefined name \"${node.name}\"", node.startPos, node.endPos))
     }
 
-    private fun interpretAssign(node: AssignNode, ref: Referables): BaseObject {
-        val value = interpret(node.value, ref).obj
+    private fun interpretAssign(node: AssignNode, ref: Referables): InterpretResult {
+        val value = interpret(node.value, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
 
         ref.set(node.iden.name, value, node.mutable)
-        return NullObj(node.startPos, node.endPos)
+        return InterpretResult(NullObj(node.startPos, node.endPos))
     }
 
-    private fun interpretList(node: ListNode, ref: Referables): BaseObject {
+    private fun interpretList(node: ListNode, ref: Referables): InterpretResult {
         val list = mutableListOf<BaseObject>()
         for (item in node.nodes) {
-            list.add(interpret(item, ref).obj)
+            list.add(interpret(item, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj)
         }
-        return ListObj(list, node.startPos, node.endPos)
+        return InterpretResult(ListObj(list, node.startPos, node.endPos))
     }
 
-    private fun interpretDict(node: DictNode, ref: Referables): BaseObject {
+    private fun interpretDict(node: DictNode, ref: Referables): InterpretResult {
         val dict = mutableMapOf<BaseObject, BaseObject>()
         for ((key, value) in node.dict) {
-            dict[StringObj(key.value, key.startPos, key.endPos)] = interpret(value, ref).obj
+            dict[StringObj(key.value, key.startPos, key.endPos)] = interpret(value, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
         }
-        return DictObj(dict, node.startPos, node.endPos)
+        return InterpretResult(DictObj(dict, node.startPos, node.endPos))
     }
 
-    private fun interpretBracket(node: BracketNode, ref: Referables): BaseObject {
-        return interpret(node.innerNode, ref).obj
+    private fun interpretBracket(node: BracketNode, ref: Referables): InterpretResult {
+        return interpret(node.innerNode, ref)
     }
 
-    private fun interpretIf(node: IfNode, ref: Referables): BaseObject {
+    private fun interpretIf(node: IfNode, ref: Referables): InterpretResult {
         val localRef = ref.bornChild()
 
-        val cond = interpret(node.condition, localRef).obj
+        val cond = interpret(node.condition, localRef).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
         if (cond.boolVal) {
-            return interpret(node.action, localRef).obj
+            return interpret(node.action, localRef)
         }
 
         for ((elifCondNode, elifActionNode) in node.elif) {
-            val elifCond = interpret(elifCondNode, localRef).obj
+            val elifCond = interpret(elifCondNode, localRef).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
             if (elifCond.boolVal) {
-                return interpret(elifActionNode, localRef).obj
+                return interpret(elifActionNode, localRef)
             }
         }
 
         if (node.elseAction != null) {
-            return interpret(node.elseAction, localRef).obj
+            return interpret(node.elseAction, localRef)
         }
 
-        return NullObj(node.startPos, node.endPos)
+        return InterpretResult(NullObj(node.startPos, node.endPos))
     }
 
     // TODO: Add for loop
-    private fun interpretLoop(node: LoopNode, globalRef: Referables): BaseObject {
+    private fun interpretLoop(node: LoopNode, globalRef: Referables): InterpretResult {
         val ref = globalRef.bornChild()
         var finalObj: BaseObject = NullObj(node.startPos, node.endPos)
 
         var complete = true
         if (node.loopTokenType == WHILE) {
-            var cond = interpret(node.condition, ref).obj
+            var cond = interpret(node.condition, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
 
             while (cond.boolVal) {
                 val res = interpret(node.mainAction, ref)
@@ -208,7 +218,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
                     break
                 }
                 if (res.interrupt == RETURN) {
-                    TODO("Add return / break / continue handling")
+                    return res
                 }
                 finalObj = res.obj
                 cond = interpret(node.condition, ref).obj
@@ -217,65 +227,62 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         } else throw NotYourFaultError("Unknown loop token type: ${node.loopTokenType}", node.startPos, node.endPos)
 
         if (complete) {
-            val compRes = interpret(node.compAction ?: NullNode(node.startPos, node.endPos), ref)
+            val compRes = interpret(node.compAction ?: NullNode(node.startPos, node.endPos), ref).also { if (it.interrupt != null) return it }
             if (compRes.hasObject) finalObj = compRes.obj
         } else {
-            val incompRes = interpret(node.incompAction ?: NullNode(node.startPos, node.endPos), ref)
+            val incompRes = interpret(node.incompAction ?: NullNode(node.startPos, node.endPos), ref).also { if (it.interrupt != null) return it }
             if (incompRes.hasObject) finalObj = incompRes.obj
         }
 
-        return finalObj
+        return InterpretResult(finalObj)
     }
 
-    private fun interpretProcedural(node: ProcedureNode, ref: Referables): BaseObject {
+    private fun interpretProcedural(node: ProcedureNode, ref: Referables): InterpretResult {
+        var finalObj: BaseObject = NullObj(node.startPos, node.endPos)
         for (procedure in node.procedures) {
-            val res = interpret(procedure, ref)
-
-            if (res.interrupt != null) {
-                break  // TODO: Add return / break / continue handling
-            }
+            finalObj = interpret(procedure, ref).also { if (it.interrupt != null) return it }.obj
         }
-        return NullObj(node.startPos, node.endPos)
+        return InterpretResult(finalObj)
     }
 
-    private fun interpretFuncCreation(node: FuncNode, ref: Referables): BaseObject {
+    private fun interpretFuncCreation(node: FuncNode, ref: Referables): InterpretResult {
         val obj = FuncObj(node)
         ref.set(node.name.value, obj, false)
-        return obj
+        return InterpretResult(obj)
     }
 
-    private fun interpretFunc(node: FuncNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): BaseObject {
+    private fun interpretFunc(node: FuncNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): InterpretResult {
         val params = node.params.map { convertParamNode(it, ref) }
         setParams(params, args, kwargs, ref, startPos, endPos)
-        return interpret(node.body, ref).obj
+        return interpret(node.body, ref)
     }
 
-    private fun interpretBultinFunc(obj: BuiltinFunc, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): BaseObject {  // BuiltinFunc doesn't have positional information
+    private fun interpretBultinFunc(obj: BuiltinFunc, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): InterpretResult {  // BuiltinFunc doesn't have positional information
         setParams(obj.parameters, args, kwargs, ref, startPos, endPos)
-        return obj(ref)
+        return InterpretResult(obj(ref))
     }
 
-    private fun interpretClassCreation(node: ClassNode, ref: Referables): BaseObject {
+    private fun interpretClassCreation(node: ClassNode, ref: Referables): InterpretResult {
         val obj = ClassObj(node)
         ref.set(node.name.value, obj, false)
-        return obj
+        return InterpretResult(obj)
     }
 
-    private fun interpretClass(node: ClassNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): BaseObject {
+    private fun interpretClass(node: ClassNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): InterpretResult {
         val thisRef = setParams(node.initParams.map { convertParamNode(it, ref) }, args, kwargs, ref, startPos, endPos)
 
         // inheritance
         node.parent?.let {
-            val parent = interpret(it, thisRef).obj
+            val parent = interpret(it, thisRef).also { it2 -> if (it2.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
             thisRef.set("that", parent, false)
         }
 
         // set class methods, constants, etc. and does the init work
-        interpret(node.body, thisRef)
+        interpret(node.body, thisRef).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }
         val thisObj = CustomObj(node.name.value, thisRef, node.startPos, node.endPos)
         thisRef.set("this", thisObj, false)
 
-        return thisObj
+        return InterpretResult(thisObj)
     }
 
     private fun convertParamNode(node: ParamNode, ref: Referables): Parameter {
@@ -333,11 +340,13 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         return ref
     }
 
-    private fun interpretPropAccess(node: PropAccessNode, ref: Referables): BaseObject {
-        val obj = interpret(node.parent, ref).obj
+    private fun interpretPropAccess(node: PropAccessNode, ref: Referables): InterpretResult {
+        val obj = interpret(node.parent, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
 
-        return obj.property.getLocal(node.property.name)
+        val prop = obj.property.getLocal(node.property.name)
             ?: obj.property.getLocal("that")?.property?.getLocal(node.property.name)  // class inheritance
             ?: throw AttributeError("Property \"${node.property.name}\" does not exist", node.startPos, node.endPos)
+
+        return InterpretResult(prop)
     }
 }
