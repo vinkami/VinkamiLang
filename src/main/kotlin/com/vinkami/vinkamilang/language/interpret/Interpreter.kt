@@ -19,6 +19,16 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         }
     }
 
+    private fun interpretNoInterrupt(node: BaseNode, ref: Referables): InterpretResult {
+        val res = interpret(node, ref)
+
+        if (res.interrupt != null) {
+            throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos)
+        }
+
+        return res
+    }
+
     private fun interpret(node: BaseNode, ref: Referables): InterpretResult {
         node::class.simpleName ?: return InterpretResult(UnknownNodeError(node))
 
@@ -67,7 +77,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     private fun interpretInterrupt(node: InterruptNode, ref: Referables): InterpretResult {
         val res = InterpretResult()
         res.interrupt = node.type
-        val obj = interpret(node.innerNode, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+        val obj = interpretNoInterrupt(node.innerNode, ref).obj
         return res(obj)
     }
 
@@ -86,7 +96,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             // Variable assignment
             if (node.left !is IdenNode) throw SyntaxError("Invalid assignment", node.startPos, node.endPos)
             val name = node.left.name
-            val value = interpret(node.right, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+            val value = interpretNoInterrupt(node.right, ref).obj
             val ogValue =
                 ref.get(name) ?: throw NameError("Unknown variable $name", node.left.startPos, node.left.endPos)
 
@@ -108,8 +118,8 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
 
         } else {
             // Normal caluclation
-            val left = interpret(node.left, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
-            val right = interpret(node.right, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+            val left = interpretNoInterrupt(node.left, ref).obj
+            val right = interpretNoInterrupt(node.right, ref).obj
 
             val obj = when (node.op.type) {
                 PLUS -> left.plus(right)
@@ -137,7 +147,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpretUnaryOp(node: UnaryOpNode, ref: Referables): InterpretResult {
-        val innerObj = interpret(node.innerNode, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+        val innerObj = interpretNoInterrupt(node.innerNode, ref).obj
 
         val obj =  when (node.op.type) {
             PLUS -> innerObj.unaryPlus()
@@ -154,7 +164,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpretAssign(node: AssignNode, ref: Referables): InterpretResult {
-        val value = interpret(node.value, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+        val value = interpretNoInterrupt(node.value, ref).obj
 
         ref.set(node.iden.name, value, node.mutable)
         return InterpretResult(NullObj(node.startPos, node.endPos))
@@ -163,7 +173,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     private fun interpretList(node: ListNode, ref: Referables): InterpretResult {
         val list = mutableListOf<BaseObject>()
         for (item in node.nodes) {
-            list.add(interpret(item, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj)
+            list.add(interpretNoInterrupt(item, ref).obj)
         }
         return InterpretResult(ListObj(list, node.startPos, node.endPos))
     }
@@ -171,7 +181,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     private fun interpretDict(node: DictNode, ref: Referables): InterpretResult {
         val dict = mutableMapOf<BaseObject, BaseObject>()
         for ((key, value) in node.dict) {
-            dict[StringObj(key.value, key.startPos, key.endPos)] = interpret(value, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+            dict[StringObj(key.value, key.startPos, key.endPos)] = interpretNoInterrupt(value, ref).obj
         }
         return InterpretResult(DictObj(dict, node.startPos, node.endPos))
     }
@@ -183,13 +193,13 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     private fun interpretIf(node: IfNode, ref: Referables): InterpretResult {
         val localRef = ref.bornChild()
 
-        val cond = interpret(node.condition, localRef).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+        val cond = interpretNoInterrupt(node.condition, localRef).obj
         if (cond.boolVal) {
             return interpret(node.action, localRef)
         }
 
         for ((elifCondNode, elifActionNode) in node.elif) {
-            val elifCond = interpret(elifCondNode, localRef).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+            val elifCond = interpretNoInterrupt(elifCondNode, localRef).obj
             if (elifCond.boolVal) {
                 return interpret(elifActionNode, localRef)
             }
@@ -209,7 +219,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
 
         var complete = true
         if (node.loopTokenType == WHILE) {
-            var cond = interpret(node.condition, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+            var cond = interpretNoInterrupt(node.condition, ref).obj
 
             while (cond.boolVal) {
                 val res = interpret(node.mainAction, ref)
@@ -221,7 +231,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
                     return res
                 }
                 finalObj = res.obj
-                cond = interpret(node.condition, ref).obj
+                cond = interpretNoInterrupt(node.condition, ref).obj
             }
 
         } else throw NotYourFaultError("Unknown loop token type: ${node.loopTokenType}", node.startPos, node.endPos)
@@ -273,12 +283,12 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
 
         // inheritance
         node.parent?.let {
-            val parent = interpret(it, thisRef).also { it2 -> if (it2.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+            val parent = interpretNoInterrupt(it, thisRef).obj
             thisRef.set("that", parent, false)
         }
 
         // set class methods, constants, etc. and does the init work
-        interpret(node.body, thisRef).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }
+        interpretNoInterrupt(node.body, thisRef)
         val thisObj = CustomObj(node.name.value, thisRef, node.startPos, node.endPos)
         thisRef.set("this", thisObj, false)
 
@@ -341,7 +351,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpretPropAccess(node: PropAccessNode, ref: Referables): InterpretResult {
-        val obj = interpret(node.parent, ref).also { if (it.interrupt != null) throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos) }.obj
+        val obj = interpretNoInterrupt(node.parent, ref).obj
 
         val prop = obj.property.getLocal(node.property.name)
             ?: obj.property.getLocal("that")?.property?.getLocal(node.property.name)  // class inheritance
