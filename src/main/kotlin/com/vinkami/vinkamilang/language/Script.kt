@@ -15,8 +15,6 @@ class Script {
     val code: String
     val name: String
 
-    var error: BaseError? = null
-
     constructor(file: File, pf: PathFinder) {
         this.name = file.relativeTo(pf.scriptFolder)
             .toString()
@@ -34,32 +32,25 @@ class Script {
         return "<Script $name>"
     }
 
-    fun lex(): List<Token>? {
-        try {
-            return Lexer(code, name).tokenize()
+    fun lex(): Pair<List<Token>?, BaseError?> {
+        return try {
+            Lexer(code, name).tokenize() to null
         } catch (e: BaseError) {
-            error = e
+            null to e
         }
-        return null
     }
 
-    fun parse(): BaseNode? {
+    fun parse(): Pair<BaseNode?, BaseError?> {
         try {
-            val tokens = lex() ?: return null
-            return Parser(tokens).parse()
+            val tokens = lex().also { if (it.second != null) return null to it.second }.first!!
+            return Parser(tokens).parse() to null
         } catch (e: BaseError) {
-            error = e
+            return null to e
         }
-        return null
     }
 
-    fun interpret(ref: Referables): BaseObject? {
-        val node = parse() ?: return null
-        val result = Interpreter(node, ref).interpret()
-        if (result.hasError) {
-            error = result.error
-            return error
-        }
-        return null
+    fun interpret(ref: Referables): BaseError? {
+        val node = parse().also { if (it.second != null) return it.second }.first!!
+        return Interpreter(node, ref).interpret()
     }
 }
