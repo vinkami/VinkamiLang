@@ -225,6 +225,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
                 val res = interpret(node.mainAction, ref)
                 if (res.interrupt == BREAK) {
                     complete = false
+                    res.clearInterrupt()  // just in case; not really useful for now
                     break
                 }
                 if (res.interrupt == RETURN) {
@@ -233,6 +234,11 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
                 finalObj = res.obj
                 cond = interpretNoInterrupt(node.condition, ref).obj
             }
+
+//        } else if (node.loopTokenType == FOR) {
+//            if (node.condition !is ArgumentsNode) throw NotYourFaultError("Invalid for loop in the condition", node.startPos, node.endPos)
+//            val variable = node.condition.args[0]
+//            val iterable = interpretNoInterrupt(node.condition.args[1], ref).obj
 
         } else throw NotYourFaultError("Unknown loop token type: ${node.loopTokenType}", node.startPos, node.endPos)
 
@@ -270,7 +276,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
 
     private fun interpretBultinFunc(obj: BuiltinFunc, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): InterpretResult {  // BuiltinFunc doesn't have positional information
         setParams(obj.parameters, args, kwargs, ref, startPos, endPos)
-        return InterpretResult(obj(ref))
+        return InterpretResult(obj(ref, startPos, endPos))
     }
 
     private fun interpretClassCreation(node: ClassNode, ref: Referables): InterpretResult {
