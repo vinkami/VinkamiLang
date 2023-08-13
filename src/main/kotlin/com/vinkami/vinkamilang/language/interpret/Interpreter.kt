@@ -264,7 +264,8 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     private fun interpretFunc(node: FuncNode, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): InterpretResult {
         val params = node.params.map { convertParamNode(it, ref) }
         setParams(params, args, kwargs, ref, startPos, endPos)
-        return interpret(node.body, ref)
+        val res = interpret(node.body, ref)
+        return InterpretResult(res.obj)  // remove possible interrupt
     }
 
     private fun interpretBultinFunc(obj: BuiltinFunc, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): InterpretResult {  // BuiltinFunc doesn't have positional information
