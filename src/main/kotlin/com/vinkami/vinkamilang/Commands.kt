@@ -81,7 +81,7 @@ class Commands(private val pf: PathFinder): CommandExecutor {
 
         val ref = Referables({s: String -> player.sendMessage(s)})
         val result = script.interpret(ref)
-        player.sendMessage(result?.toString() ?: script.error.toString())
+        result?.let { player.sendMessage(it.toString()) }
     }
 
     private fun vkrunlex(player: CommandSender, scriptName: String) {
@@ -92,7 +92,8 @@ class Commands(private val pf: PathFinder): CommandExecutor {
             return
         }
 
-        player.sendMessage(script.lex()?.toString() ?: script.error.toString())
+        val (tokens, error) = script.lex()
+        player.sendMessage(error?.toString() ?: tokens.toString())
     }
 
     private fun vkrunparse(player: CommandSender, scriptName: String) {
@@ -103,14 +104,16 @@ class Commands(private val pf: PathFinder): CommandExecutor {
             return
         }
 
-        player.sendMessage(script.parse()?.toString() ?: script.error.toString())
+        val (node, error) = script.parse()
+        player.sendMessage(error?.toString() ?: node.toString())
     }
 
     private fun vkexecute(player: CommandSender, codes: List<String>) {
-        vkexecuteRef.stdout = {s: String -> player.sendMessage(s)}
+        vkexecuteRef.stdout = { s: String -> player.sendMessage(s) }
         val code = codes.joinToString(" ")
         val script = Script("<stdin>", code)
         val result = script.interpret(vkexecuteRef)
-        player.sendMessage(result?.toString() ?: script.error.toString())
+        result.let { player.sendMessage(it.toString()) }
+        vkexecuteRef.stdout = null
     }
 }
