@@ -11,18 +11,19 @@ import com.vinkami.vinkamilang.language.lex.TokenType.*
 import com.vinkami.vinkamilang.language.parse.node.*
 
 class Interpreter(private val globalNode: BaseNode, private val globalRef: Referables) {
-    fun interpret(): InterpretResult {
-        return try {
+    fun interpret(): BaseError? {
+        try {
             interpret(globalNode, globalRef)
         } catch (e: BaseError) {
-            InterpretResult(e)
+            return e
         }
+        return null
     }
 
     private fun interpretNoInterrupt(node: BaseNode, ref: Referables): InterpretResult {
         val res = interpret(node, ref)
 
-        if (res.interrupt != null) {
+        if (res.hasInterrupt) {
             throw SyntaxError("Interrupt should not occur here", node.startPos, node.endPos)
         }
 
@@ -75,10 +76,9 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
     }
 
     private fun interpretInterrupt(node: InterruptNode, ref: Referables): InterpretResult {
-        val res = InterpretResult()
-        res.interrupt = node.type
+        val interrupt = node.type
         val obj = interpretNoInterrupt(node.innerNode, ref).obj
-        return res(obj)
+        return InterpretResult(obj, interrupt)
     }
 
     private fun interpretNumber(node: NumberNode): InterpretResult {
@@ -265,7 +265,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         val params = node.params.map { convertParamNode(it, ref) }
         setParams(params, args, kwargs, ref, startPos, endPos)
         val res = interpret(node.body, ref)
-        return InterpretResult(res.obj)  // remove possible interrupt
+        return res.clearInterrupt()  // remove possible return interrupt
     }
 
     private fun interpretBultinFunc(obj: BuiltinFunc, args: List<BaseNode>, kwargs: Map<Token, BaseNode>, ref: Referables, startPos: Position, endPos: Position): InterpretResult {  // BuiltinFunc doesn't have positional information
