@@ -33,4 +33,6 @@ interface BaseObject {
     fun and(other: BaseObject): BaseObject = BoolObj(boolVal && other.boolVal, startPos, other.endPos)
     fun or(other: BaseObject): BaseObject = BoolObj(boolVal || other.boolVal, startPos, other.endPos)
     fun not(): BaseObject = BoolObj(!boolVal, startPos, endPos)
+
+    fun iter(): BaseObject = throw SyntaxError("Can't iterate over $this", startPos, endPos)
 }
