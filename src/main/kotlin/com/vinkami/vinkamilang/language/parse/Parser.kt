@@ -311,8 +311,36 @@ class Parser(private val tokens: List<Token>) {
         val loopTT = currentType
 
         ass()
-        val condition = parseBracket()
+        var condition: BaseNode? = null
+        if (loopTT == WHILE) {
+            condition = parseBracket()
+        } else if (loopTT == FOR) {
+            val argStartPos = currentStartPos
+            val hasParen = currentType == L_PARAN
+            if (hasParen) ass()
+            if (currentType != IDENTIFIER) throw SyntaxError("First argument of a for loop should be an identifier", currentStartPos, currentEndPos)
+            val variable = parseIden()
+            ass()
+
+            if (currentType != COMMA) throw SyntaxError("The arguments of a for loop should be separated by a comma", currentStartPos, currentEndPos)
+            ass()
+
+            val iterable = parseOnce()
+            ass()
+
+            if (hasParen) {
+                if (currentType != R_PARAN) throw SyntaxError("Parentheses should come in pairs", currentStartPos, currentEndPos)
+                ass()
+            }
+            if (currentType == R_PARAN) throw SyntaxError("Parentheses should come in pairs", currentStartPos, currentEndPos)
+
+            condition = ArgumentsNode(listOf(variable, iterable), mapOf(), argStartPos, currentEndPos)
+        }
+
+        if (condition == null) throw NotYourFaultError("Illegal loop type $loopTT", startPos, currentEndPos)
+
         ass()
+        if (currentType != L_BRACE) throw SyntaxError("Expected {", currentStartPos, currentEndPos)
         val mainAction = parseBracket()
         var endPos = currentEndPos
 
