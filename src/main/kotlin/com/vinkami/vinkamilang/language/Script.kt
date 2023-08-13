@@ -56,8 +56,10 @@ class Script {
     fun interpret(ref: Referables): BaseObject? {
         val node = parse() ?: return null
         val result = Interpreter(node, ref).interpret()
-        if (result.hasError) error = result.error
-        else return result.obj
+        if (result.hasError) {
+            error = result.error
+            return error
+        }
         return null
     }
 }
