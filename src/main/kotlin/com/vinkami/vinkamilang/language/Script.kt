@@ -4,7 +4,6 @@ import com.vinkami.vinkamilang.PathFinder
 import com.vinkami.vinkamilang.language.exception.BaseError
 import com.vinkami.vinkamilang.language.interpret.Interpreter
 import com.vinkami.vinkamilang.language.interpret.Referables
-import com.vinkami.vinkamilang.language.interpret.`object`.BaseObject
 import com.vinkami.vinkamilang.language.lex.Lexer
 import com.vinkami.vinkamilang.language.lex.Token
 import com.vinkami.vinkamilang.language.parse.Parser
