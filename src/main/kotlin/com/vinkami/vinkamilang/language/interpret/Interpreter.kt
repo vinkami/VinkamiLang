@@ -48,7 +48,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             is IfNode -> interpretIf(node, ref)
             is LoopNode -> interpretLoop(node, ref)
             is InterruptNode -> interpretInterrupt(node, ref)
-            is ProcedureNode -> interpretProcedural(node, ref)
+            is ProcedureNode -> interpretProcedure(node, ref)
             is FuncNode -> interpretFuncCreation(node, ref)
             is ClassNode -> interpretClassCreation(node, ref)
             is PropAccessNode -> interpretPropAccess(node, ref)
@@ -243,17 +243,21 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
         } else throw NotYourFaultError("Unknown loop token type: ${node.loopTokenType}", node.startPos, node.endPos)
 
         if (complete) {
-            val compRes = interpret(node.compAction ?: NullNode(node.startPos, node.endPos), ref).also { if (it.interrupt != null) return it }
-            if (compRes.hasObject) finalObj = compRes.obj
+            if (node.compAction != null) {
+                val compRes = interpret(node.compAction, ref).also { if (it.interrupt != null) return it }
+                if (compRes.hasObject) finalObj = compRes.obj
+            }
         } else {
-            val incompRes = interpret(node.incompAction ?: NullNode(node.startPos, node.endPos), ref).also { if (it.interrupt != null) return it }
-            if (incompRes.hasObject) finalObj = incompRes.obj
+            if (node.incompAction != null) {
+                val incompRes = interpret(node.incompAction, ref).also { if (it.interrupt != null) return it }
+                if (incompRes.hasObject) finalObj = incompRes.obj
+            }
         }
 
         return InterpretResult(finalObj)
     }
 
-    private fun interpretProcedural(node: ProcedureNode, ref: Referables): InterpretResult {
+    private fun interpretProcedure(node: ProcedureNode, ref: Referables): InterpretResult {
         var finalObj: BaseObject = NullObj(node.startPos, node.endPos)
         for (procedure in node.procedures) {
             finalObj = interpret(procedure, ref).also { if (it.interrupt != null) return it }.obj
