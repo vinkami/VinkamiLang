@@ -11,6 +11,7 @@ import com.vinkami.vinkamilang.language.parse.node.*
 
 class Parser(private val tokens: List<Token>) {
     private var pos = -1
+    private val procedures = mutableListOf<BaseNode>()
 
     private val currentToken: Token
         get() = tokens[pos]
@@ -47,12 +48,11 @@ class Parser(private val tokens: List<Token>) {
     }
 
     fun parse(): BaseNode {
-        val procedures = mutableListOf<BaseNode>()
         val startPos = currentStartPos
 
         skipSpace()
         while (true) {
-            val procedure = parseOnce()
+            val procedure = processBinOp(0, parseOnce())  // look for statement to binop possibilities
             if (procedure is ArgumentsNode) throw SyntaxError("Nothing to be called", procedure.startPos, procedure.endPos)
             else procedures += procedure
             if (currentType == EOF) break
@@ -60,8 +60,7 @@ class Parser(private val tokens: List<Token>) {
         }
         val endPos = currentEndPos
 
-        if (procedures.size == 1 || procedures.size == 2) return procedures[0]  // 1: Only NullNode from EOF; 2: Only one procedure
-        return ProcedureNode(procedures, startPos, endPos)
+        return ProcedureNode(procedures.subList(0, procedures.size-1), startPos, endPos)  // Removes the NullNode from EOF
     }
 
     private fun parseOnce(): BaseNode {
@@ -254,16 +253,16 @@ class Parser(private val tokens: List<Token>) {
                     argsEnd = true
                     val name = currentToken
                     ass(2)
-                    kwargs[name] = parseOnce()
+                    kwargs[name] = processBinOp(0, parseOnce())
                 } else {
-                    args += parseOnce()
+                    args += processBinOp(0, parseOnce())
                 }
 
             } else {  // kwargs
                 val name = currentToken
                 if (nextType != ASSIGN) throw SyntaxError("No assign symbol in between", currentStartPos, currentEndPos)
                 ass(2)
-                kwargs[name] = parseOnce()
+                kwargs[name] = processBinOp(0, parseOnce())
             }
 
             if (nextType == EOF) paramsEnd = true
