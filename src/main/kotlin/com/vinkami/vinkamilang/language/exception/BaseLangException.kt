@@ -16,7 +16,7 @@ abstract class BaseLangException(message: String, override val startPos: Positio
             Traceback:
                 File: ${startPos.fileName}, line: ${startPos.line + 1}
                     ${startPos.code.split('\n')[startPos.line].trimIndent()}
-            ${makeArrow(startPos, endPos)}
+                    ${makeArrow(startPos, endPos)}
         """.trimIndent()
     }
 
