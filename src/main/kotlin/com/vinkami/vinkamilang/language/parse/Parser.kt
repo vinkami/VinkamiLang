@@ -75,6 +75,7 @@ class Parser(private val tokens: List<Token>) {
             BREAK, RETURN -> parseInterrupt()
             FUNC -> parseFuncDef()
             CLASS -> parseClass()
+            IMPORT -> parseImport()
             EOF -> NullNode(currentToken)
             else -> throw SyntaxError("Unexpected token $currentType", currentStartPos, currentEndPos)
         }
@@ -498,5 +499,9 @@ class Parser(private val tokens: List<Token>) {
         val prop = parseIden()
 
         return PropAccessNode(node, prop)
+    }
+
+    private fun parseImport(): ImportNode {
+        return ImportNode(currentToken.value, currentStartPos, currentEndPos)
     }
 }
