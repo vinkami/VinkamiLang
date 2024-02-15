@@ -52,6 +52,7 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             is FuncNode -> interpretFuncCreation(node, ref)
             is ClassNode -> interpretClassCreation(node, ref)
             is PropAccessNode -> interpretPropAccess(node, ref)
+            is ImportNode -> interpretImport(node, ref)
 
             is ArgumentsNode -> throw NotYourFaultError("ArgumentsNode should not be interpreted", node.startPos, node.endPos)
             else -> throw UnknownNodeError(node)
@@ -369,5 +370,9 @@ class Interpreter(private val globalNode: BaseNode, private val globalRef: Refer
             ?: throw AttributeError("Property \"${node.property.name}\" does not exist", node.startPos, node.endPos)
 
         return InterpretResult(prop)
+    }
+
+    private fun interpretImport(node: ImportNode, ref: Referables): InterpretResult {
+        TODO("Not yet implemented")
     }
 }
