@@ -69,6 +69,14 @@ class Lexer(private val text: String, fileName: String) {
             advance()
         }
 
+        // handles import
+        if (section.lowercase() == "import") {
+            while (currentChar != null && currentChar != "\n") {
+                section += currentChar
+                advance()
+            }
+        }
+
         return section
     }
 
