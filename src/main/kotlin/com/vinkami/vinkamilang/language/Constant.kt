@@ -106,7 +106,6 @@ internal object Constant {
         "val" to VAL,
         "is" to IS,
         "in" to IN,
-        "import" to IMPORT
     )
 
     val bindingPower: Map<TokenType, Pair<Int, Int>> = mapOf(
