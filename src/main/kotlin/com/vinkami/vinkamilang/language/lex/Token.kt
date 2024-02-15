@@ -45,6 +45,7 @@ class Token {
             in Regex("^(?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')\$") -> STRING to section.substring(1, section.length - 1)
             in Regex("^ +$") -> SPACE to section
             in Regex("^[\r\n]+$") -> LINEBREAK to section
+            in Regex("^import [^\n]*", RegexOption.IGNORE_CASE) -> IMPORT to section.substring(7, section.length - 1)
             else -> throw IllegalCharError(section, startPos, endPos)
         }
     }
