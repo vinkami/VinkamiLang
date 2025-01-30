@@ -1,3 +1,7 @@
+## Updates
+This project got half-abandoned but now picked up. The programming language is separated as a new repository [here](https://github.com/vinkami/vklang). New features, bug fixes, etc. will be updated there first.  
+The plugin is planned to be a wrapper for the language, though there is no guarantee that it will be finished because this is just a hobby project.
+
 # VinkamiLang
 
 VinkamiLang is a Paper / Spigot plugin aiming to provide easier and quicker development for your Minecraft server. This language has a similar working principle when compared to [Skript] simply because this project's idea comes from it. However, VinkamiLang has a more structural syntax instead of Skript's natural syntax, making coding for an experienced programmer simpler.
